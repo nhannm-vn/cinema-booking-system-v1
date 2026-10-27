@@ -61,18 +61,7 @@ class CinemaApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.dark,
             initialRoute: initialRoute,
-            routes: {
-              AppRoutes.home: (context) => const Scaffold(
-                    body: Center(
-                      child: Text('CINEMA BOOKING APP'),
-                    ),
-                  ),
-              AppRoutes.login: (context) => const Scaffold(
-                    body: Center(
-                      child: Text('ĐĂNG NHẬP'),
-                    ),
-                  ),
-            },
+            onGenerateRoute: AppRouter.onGenerateRoute,
           );
         },
       ),
