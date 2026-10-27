@@ -1,4 +1,4 @@
-# BRIEFING — 2026-10-27T17:34:25Z
+# BRIEFING — 2026-10-27T18:14:45Z
 
 ## Mission
 Orchestrate the complete, production-ready build of Cinema Booking & Operation Management Flutter app (screens S01–S31) with Supabase + VNPay Sandbox per docs/ and ORIGINAL_REQUEST.md.
@@ -21,13 +21,13 @@ Orchestrate the complete, production-ready build of Cinema Booking & Operation M
   1. Survey & Map Scope [done]
   2. Test Infrastructure & Suite Design (test_writer_e2e_1) [done - TEST_READY.md]
   3. Milestone 1: Backend Completeness & Shared Core [DONE - PASS]
-  4. Milestone 2: Auth & Customer Discovery (worker_m2_1) [in-progress]
-  5. Milestone 3: Booking Flow & Payment (S05–S09, S11) [pending]
+  4. Milestone 2: Auth & Customer Discovery [DONE - PASS]
+  5. Milestone 3: Booking Flow & Payment (S05–S09, S11, S11B) [in-progress]
   6. Milestone 4: Staff Operations (S18–S21, S23) [pending]
-  7. Milestone 5: Management & Admin (S10, S12–S16, S22, S24–S29, S31) [pending]
+  7. Milestone 5: Management & Admin (S10, S10B, S12–S16, S22, S24–S29, S31) [pending]
   8. Milestone 6: E2E Integration & Final Hardening (Tiers 1-5) [pending]
-- **Current phase**: 3 (Milestone 2 Screen Implementation)
-- **Current focus**: worker_m2_1 implementing screens S01, S02, S03, S04, S17, S17B, S30
+- **Current phase**: 4 (Milestone 3 Exploration)
+- **Current focus**: explorer_m3_1 planning S05–S09, S11, S11B and fixing BookingModel.toMap()
 
 ## 🔒 Key Constraints
 - NEVER write, modify, or create source code files directly.
@@ -42,36 +42,22 @@ Orchestrate the complete, production-ready build of Cinema Booking & Operation M
 - Updated: 2026-10-27T16:22:00Z
 
 ## Key Decisions Made
-- Milestone 1 passed with 100% approvals and clean audit.
-- E2E Testing Track published `TEST_READY.md` with 401 tests (Tiers 1–4, 100% pass).
-- Worker M2 (`worker_m2_1`) is currently implementing M2 presentation screens.
+- Milestone 1 and Milestone 2 completed and passed all gate checks with clean audits.
+- Total project tests currently passing: 932/932 tests. `flutter analyze` 0 issues.
+- Milestone 3 kicked off: S05 Showtimes, S06 Seat Map (`hold_seats`), S07 Food Select (`HoldTimer`), S08 Checkout, S08B VNPay WebView, S09 Ticket Success, S11 Profile, S11B Edit Profile.
 
 ## Team Roster
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
-| spec_miner_survey_1 | teamwork_preview_spec_miner | Comprehensive specs & docs survey | completed | fb9412be-5aed-4e1f-b48c-3a362313a4c8 |
-| explorer_survey_2 | teamwork_preview_explorer | Flutter codebase & linter audit | completed | 30d5480b-5441-48c8-abea-a2c1af65df6f |
-| explorer_survey_3 | teamwork_preview_explorer | Supabase, DB schema & RPC survey | completed | b71978b2-3b41-401f-95fe-e3bf04ee93f7 |
-| test_writer_e2e_1 | teamwork_preview_test_writer | E2E test suite (Tiers 1-4) & TEST_READY.md | completed | d6d55a56-2020-4bc1-9a21-5805b3c8d627 |
-| explorer_m1_1 | teamwork_preview_explorer | M1 backend & shared layer plan | completed | e6d82308-b9ed-4bdf-8be5-38b15838b1cb |
-| worker_m1_1 | teamwork_preview_worker | Implement M1 code | completed | 75babbcd-6e55-43f1-9c32-1d118f16354d |
-| reviewer_m1_1 | teamwork_preview_reviewer | M1 code review & token compliance | completed (APPROVE) | 6dcb77c1-1380-4143-85cb-0f350127ca8e |
-| reviewer_m1_2 | teamwork_preview_reviewer | M1 backend & state review | completed (APPROVE) | 441f0335-eab8-48bf-9ed4-2016efe08a9c |
-| challenger_m1_1 | teamwork_preview_challenger | Empirical stress tests M1 | completed (APPROVE) | 8a403157-21bd-4401-82ce-84eca766737d |
-| challenger_m1_2 | teamwork_preview_challenger | Empirical DB & MultiProvider tests M1 | completed (APPROVE) | c2c11e5d-fc03-4574-bb3d-58e424c09c1b |
-| auditor_m1_1 | teamwork_preview_auditor | M1 Forensic Integrity Audit | completed (CLEAN) | 748cc2ec-cc48-4ac4-bc1a-119683868791 |
-| explorer_m2_1 | teamwork_preview_explorer | M2 Auth & Discovery plan | completed | 538adb0f-2f1c-4051-a168-820f0a079fb4 |
-| worker_m2_1 | teamwork_preview_worker | Implement M2 screens & tests | in-progress | 06e1223c-d8c5-47b1-b8a3-d0f29174cf09 |
+| explorer_m3_1 | teamwork_preview_explorer | M3 Booking Flow & Checkout plan | completed | 358b8251-36c3-4a38-8c90-46bd881bb606 |
+| worker_m3_1 | teamwork_preview_worker | M3 Implementation (S05-S09, S11, S11B) | in-progress | 70d55671-ca90-4d72-bbd0-844f9f434e36 |
 
 ## Succession Status
-- Succession required: no
-- Spawn count: 13 / 16
-- Pending subagents: 06e1223c-d8c5-47b1-b8a3-d0f29174cf09
-- Predecessor: none
-- Successor: not yet spawned
+- Succession required: no (continuing active orchestration)
+- Active subagents: worker_m3_1
 
 ## Active Timers
-- Heartbeat cron: 9a20b4d6-8cae-4f73-9d70-c317f7996130/task-10
+- Heartbeat cron: 9a20b4d6-8cae-4f73-9d70-c317f7996130/task-320
 
 ## Artifact Index
 - d:\cinema-booking-system-v1\.agents\teamwork\ORIGINAL_REQUEST.md — Authoritative User Request

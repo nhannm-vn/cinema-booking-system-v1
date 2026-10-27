@@ -71,6 +71,8 @@ class FakeCinemaAuthProvider extends ChangeNotifier implements AuthProvider {
   @override
   Future<bool> signUp({required String email, required String password, required String fullName, String? phone}) async => true;
   @override
+  Future<bool> updateProfile({required String fullName, String? phone}) async => true;
+  @override
   Future<void> signOut() async {}
   @override
   void clearError() {}

@@ -146,6 +146,7 @@ class BookingModel {
       'checked_in_by': checkedInBy,
       'checked_in_at': checkedInAt?.toIso8601String(),
       'cancel_reason': cancelReason,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 }

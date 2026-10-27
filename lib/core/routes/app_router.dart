@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/booking/presentation/screens/checkout_screen.dart';
+import '../../features/booking/presentation/screens/food_selection_screen.dart';
+import '../../features/booking/presentation/screens/seat_selection_screen.dart';
+import '../../features/booking/presentation/screens/showtime_selection_screen.dart';
+import '../../features/booking/presentation/screens/vnpay_webview_screen.dart';
 import '../../features/cinemas/data/cinema_model.dart';
 import '../../features/cinemas/presentation/screens/cinema_detail_screen.dart';
 import '../../features/cinemas/presentation/screens/cinema_map_screen.dart';
@@ -8,6 +13,9 @@ import '../../features/movies/data/movie_model.dart';
 import '../../features/movies/presentation/screens/home_screen.dart';
 import '../../features/movies/presentation/screens/movie_detail_screen.dart';
 import '../../features/notifications/presentation/screens/notification_center_screen.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/tickets/presentation/screens/ticket_success_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -150,6 +158,104 @@ abstract final class AppRouter {
       case AppRoutes.notifications:
         return MaterialPageRoute(
           builder: (_) => const NotificationCenterScreen(),
+          settings: settings,
+        );
+
+      // S05 Showtime Selection
+      case AppRoutes.showtimes:
+        String? movieId;
+        String? movieTitle;
+        MovieModel? movie;
+        String? cinemaId;
+        String? cinemaName;
+        if (settings.arguments is MovieModel) {
+          movie = settings.arguments as MovieModel;
+        } else if (settings.arguments is String) {
+          movieId = settings.arguments as String;
+        } else if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          movie = map['movie'] as MovieModel?;
+          movieId = map['movieId'] as String?;
+          movieTitle = map['movieTitle'] as String?;
+          cinemaId = map['cinemaId'] as String?;
+          cinemaName = map['cinemaName'] as String?;
+        }
+        return MaterialPageRoute(
+          builder: (_) => ShowtimeSelectionScreen(
+            movieId: movieId,
+            movieTitle: movieTitle,
+            movie: movie,
+            cinemaId: cinemaId,
+            cinemaName: cinemaName,
+          ),
+          settings: settings,
+        );
+
+      // S06 Seat Selection
+      case AppRoutes.seatSelect:
+        return MaterialPageRoute(
+          builder: (_) => const SeatSelectionScreen(),
+          settings: settings,
+        );
+
+      // S07 Food Selection
+      case AppRoutes.foodSelect:
+        return MaterialPageRoute(
+          builder: (_) => const FoodSelectionScreen(),
+          settings: settings,
+        );
+
+      // S08 Checkout
+      case AppRoutes.checkout:
+        return MaterialPageRoute(
+          builder: (_) => const CheckoutScreen(),
+          settings: settings,
+        );
+
+      // S08B VNPay WebView
+      case AppRoutes.vnpayWebview:
+        String paymentUrl = '';
+        String bookingCode = '';
+        String? txnRef;
+        if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          paymentUrl = (map['paymentUrl'] as String?) ?? '';
+          bookingCode = (map['bookingCode'] as String?) ?? '';
+          txnRef = map['txnRef'] as String?;
+        }
+        return MaterialPageRoute(
+          builder: (_) => VNPayWebviewScreen(
+            paymentUrl: paymentUrl,
+            bookingCode: bookingCode,
+            txnRef: txnRef,
+          ),
+          settings: settings,
+        );
+
+      // S09 Ticket Success
+      case AppRoutes.ticketSuccess:
+        String bookingCode = '';
+        if (settings.arguments is String) {
+          bookingCode = settings.arguments as String;
+        } else if (settings.arguments is Map) {
+          bookingCode = ((settings.arguments as Map)['bookingCode'] as String?) ?? '';
+        }
+        return MaterialPageRoute(
+          builder: (_) => TicketSuccessScreen(bookingCode: bookingCode),
+          settings: settings,
+        );
+
+      // S11 Profile
+      case AppRoutes.profile:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
+          settings: settings,
+        );
+
+      // S11B Edit Profile
+      case AppRoutes.editProfile:
+        return MaterialPageRoute(
+          builder: (_) => const EditProfileScreen(),
           settings: settings,
         );
 

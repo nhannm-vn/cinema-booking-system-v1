@@ -78,7 +78,7 @@ lib/
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
 | M1 | Backend Completeness & Shared Core | Missing RPCs (`get_dashboard_metrics`, `cancel_showtime`), 15m gap trigger, seed data for test accounts, Edge function service-role fix, management & counter repositories/controllers | none | DONE |
-| M2 | Auth & Customer Discovery (S01–S04, S17, S17B, S30) | Screens S01 Login, S02 Register, S03 Home Discovery, S04 Movie Detail, S17 Cinema Map, S17B Cinema Detail, S30 Notifications | M1 | PLANNED |
+| M2 | Auth & Customer Discovery (S01–S04, S17, S17B, S30) | Screens S01 Login, S02 Register, S03 Home Discovery, S04 Movie Detail, S17 Cinema Map, S17B Cinema Detail, S30 Notifications | M1 | DONE |
 | M3 | Booking Flow & Checkout (S05–S09, S11, S11B) | Screens S05 Showtimes, S06 Seat Select (`hold_seats`), S07 Food Select, S08 Checkout, S08B VNPay WebView, S09 Ticket Success, S11 Profile, S11B Edit Profile | M1, M2 | PLANNED |
 | M4 | Staff Operations (S18–S21, S23) | Screens S18 Ticket Check-in (scanner, 8 checks, T16/T18 ID check), S19 Food Delivery Board (`deliver_food`), S20 Counter Showtimes, S21 Counter Payment & Change, S23 Staff Management (`create-staff`) | M1, M3 | PLANNED |
 | M5 | Management & Admin Suite (S10, S10B, S12–S16, S22, S24–S29, S31) | Screens S10 My Tickets & S10B Ticket Detail (2h cancellation), S12 Management Menu, S13 Movies CRUD, S14 Showtimes (15m conflict check), S15 Bookings inspection, S16 Food catalog, S22 Dashboard metrics, S24 Room Seat Map designer, S25 Cinemas & Rooms, S26 Pricing, S27 Vouchers, S28 Managers, S29 Audit Logs, S31 Support Chat | M1, M3, M4 | PLANNED |

@@ -69,6 +69,11 @@ class FakeAuthProvider extends ChangeNotifier implements AuthProvider {
   }
 
   @override
+  Future<bool> updateProfile({required String fullName, String? phone}) async {
+    return true;
+  }
+
+  @override
   Future<void> signOut() async {
     signOutCalled = true;
     _currentUser = null;
