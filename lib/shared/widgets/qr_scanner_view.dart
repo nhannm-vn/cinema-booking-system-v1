@@ -58,7 +58,7 @@ class _QrScannerViewState extends State<QrScannerView> {
         // Darkened overlay with cutout
         ColorFiltered(
           colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: 0.6),
+            AppColors.canvas.withValues(alpha: 0.6),
             BlendMode.srcOut,
           ),
           child: Stack(
@@ -74,7 +74,7 @@ class _QrScannerViewState extends State<QrScannerView> {
                   width: scanBoxSize,
                   height: scanBoxSize,
                   decoration: const BoxDecoration(
-                    color: Colors.red,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.zero,
                   ),
                 ),

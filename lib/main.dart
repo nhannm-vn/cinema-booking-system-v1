@@ -14,6 +14,8 @@ import 'features/chat/presentation/controllers/support_chat_provider.dart';
 import 'features/management/presentation/controllers/management_provider.dart';
 import 'features/notifications/presentation/controllers/notification_provider.dart';
 import 'features/staff_counter/presentation/controllers/staff_counter_provider.dart';
+import 'features/staff_checkin/presentation/controllers/checkin_provider.dart';
+import 'features/staff_food/presentation/controllers/staff_food_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,6 +53,8 @@ class CinemaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => StaffCounterProvider()),
         ChangeNotifierProvider(create: (_) => ManagementProvider()),
         ChangeNotifierProvider(create: (_) => SupportChatProvider()),
+        ChangeNotifierProvider(create: (_) => CheckinProvider()),
+        ChangeNotifierProvider(create: (_) => StaffFoodProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {

@@ -74,4 +74,36 @@ class MovieModel {
       'trailer_url': trailerUrl,
     };
   }
+
+  MovieModel copyWith({
+    String? id,
+    String? title,
+    List<String>? genres,
+    int? durationMin,
+    String? ageRating,
+    DateTime? releaseDate,
+    bool? isActive,
+    String? description,
+    String? director,
+    List<String>? castMembers,
+    String? posterUrl,
+    String? backdropUrl,
+    String? trailerUrl,
+  }) {
+    return MovieModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      genres: genres ?? this.genres,
+      durationMin: durationMin ?? this.durationMin,
+      ageRating: ageRating ?? this.ageRating,
+      releaseDate: releaseDate ?? this.releaseDate,
+      isActive: isActive ?? this.isActive,
+      description: description ?? this.description,
+      director: director ?? this.director,
+      castMembers: castMembers ?? this.castMembers,
+      posterUrl: posterUrl ?? this.posterUrl,
+      backdropUrl: backdropUrl ?? this.backdropUrl,
+      trailerUrl: trailerUrl ?? this.trailerUrl,
+    );
+  }
 }

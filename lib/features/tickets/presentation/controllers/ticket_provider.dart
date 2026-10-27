@@ -17,12 +17,12 @@ class TicketProvider extends ChangeNotifier {
 
   /// Sắp tới: status == 'paid' và chưa qua giờ
   List<BookingModel> get upcomingTickets => _tickets
-      .where((t) => t.status == 'paid' && !t.isNoShow)
+      .where((t) => t.status == 'paid' && !t.isNoShow && DateTime.now().isBefore(t.showtimeStart))
       .toList();
 
-  /// Đã xem: status == 'used' hoặc noShow
+  /// Đã xem: status == 'used' hoặc noShow hoặc suất chiếu đã bắt đầu
   List<BookingModel> get historyTickets => _tickets
-      .where((t) => t.status == 'used' || t.isNoShow)
+      .where((t) => t.status == 'used' || t.isNoShow || (t.status == 'paid' && DateTime.now().isAfter(t.showtimeStart)))
       .toList();
 
   /// Đã hủy: status == 'cancelled'

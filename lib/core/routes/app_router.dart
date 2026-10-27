@@ -16,6 +16,28 @@ import '../../features/notifications/presentation/screens/notification_center_sc
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/tickets/presentation/screens/ticket_success_screen.dart';
+import '../../features/staff_checkin/presentation/screens/ticket_checkin_screen.dart';
+import '../../features/staff_food/presentation/screens/food_board_screen.dart';
+import '../../features/staff_counter/presentation/screens/counter_showtimes_screen.dart';
+import '../../features/staff_counter/presentation/screens/counter_payment_screen.dart';
+import '../../features/management/presentation/screens/staff_accounts_screen.dart';
+import '../../features/booking/data/models/booking_model.dart';
+import '../../features/booking/data/models/room_model.dart';
+import '../../features/chat/presentation/screens/support_chat_screen.dart';
+import '../../features/management/presentation/screens/audit_logs_screen.dart';
+import '../../features/management/presentation/screens/bookings_management_screen.dart';
+import '../../features/management/presentation/screens/cinemas_rooms_screen.dart';
+import '../../features/management/presentation/screens/food_catalog_screen.dart';
+import '../../features/management/presentation/screens/management_menu_screen.dart';
+import '../../features/management/presentation/screens/managers_management_screen.dart';
+import '../../features/management/presentation/screens/movies_management_screen.dart';
+import '../../features/management/presentation/screens/operational_dashboard_screen.dart';
+import '../../features/management/presentation/screens/pricing_settings_screen.dart';
+import '../../features/management/presentation/screens/seat_map_designer_screen.dart';
+import '../../features/management/presentation/screens/showtimes_management_screen.dart';
+import '../../features/management/presentation/screens/vouchers_management_screen.dart';
+import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
+import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -256,6 +278,191 @@ abstract final class AppRouter {
       case AppRoutes.editProfile:
         return MaterialPageRoute(
           builder: (_) => const EditProfileScreen(),
+          settings: settings,
+        );
+
+      // S18 Staff Check-in
+      case AppRoutes.staffCheckin:
+        return MaterialPageRoute(
+          builder: (_) => const TicketCheckinScreen(),
+          settings: settings,
+        );
+
+      // S19 Staff Food Delivery Board
+      case AppRoutes.staffFood:
+        return MaterialPageRoute(
+          builder: (_) => const FoodBoardScreen(),
+          settings: settings,
+        );
+
+      // S20 Staff Counter Showtimes
+      case AppRoutes.staffCounterShowtimes:
+        return MaterialPageRoute(
+          builder: (_) => const CounterShowtimesScreen(),
+          settings: settings,
+        );
+
+      // S21 Staff Counter Payment & Change Calculator
+      case AppRoutes.staffCounterPayment:
+        return MaterialPageRoute(
+          builder: (_) => const CounterPaymentScreen(),
+          settings: settings,
+        );
+
+      // S23 Staff Account Management
+      case AppRoutes.manageEmployees:
+        return MaterialPageRoute(
+          builder: (_) => const StaffAccountsScreen(),
+          settings: settings,
+        );
+
+      // S10 My Tickets
+      case AppRoutes.myTickets:
+        return MaterialPageRoute(
+          builder: (_) => const MyTicketsScreen(),
+          settings: settings,
+        );
+
+      // S10B Ticket Detail
+      case AppRoutes.ticketDetail:
+        BookingModel? ticket;
+        String? bookingCode;
+        if (settings.arguments is BookingModel) {
+          ticket = settings.arguments as BookingModel;
+        } else if (settings.arguments is String) {
+          bookingCode = settings.arguments as String;
+        } else if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          if (map['ticket'] is BookingModel) {
+            ticket = map['ticket'] as BookingModel;
+          }
+          if (map['bookingCode'] is String) {
+            bookingCode = map['bookingCode'] as String;
+          }
+        }
+        return MaterialPageRoute(
+          builder: (_) => TicketDetailScreen(initialTicket: ticket, bookingCode: bookingCode),
+          settings: settings,
+        );
+
+      // S12 Management Menu
+      case AppRoutes.managementHome:
+        return MaterialPageRoute(
+          builder: (_) => const ManagementMenuScreen(),
+          settings: settings,
+        );
+
+      // S13 Movies Management
+      case AppRoutes.manageMovies:
+        return MaterialPageRoute(
+          builder: (_) => const MoviesManagementScreen(),
+          settings: settings,
+        );
+
+      // S14 Showtimes Management
+      case AppRoutes.manageShowtimes:
+        return MaterialPageRoute(
+          builder: (_) => const ShowtimesManagementScreen(),
+          settings: settings,
+        );
+
+      // S15 Bookings Inspection
+      case AppRoutes.manageBookings:
+        return MaterialPageRoute(
+          builder: (_) => const BookingsManagementScreen(),
+          settings: settings,
+        );
+
+      // S16 Food & Concessions Catalog
+      case AppRoutes.manageFoods:
+        return MaterialPageRoute(
+          builder: (_) => const FoodCatalogScreen(),
+          settings: settings,
+        );
+
+      // S22 Operational Dashboard
+      case AppRoutes.dashboard:
+        return MaterialPageRoute(
+          builder: (_) => const OperationalDashboardScreen(),
+          settings: settings,
+        );
+
+      // S24 Room Seat Map Designer
+      case AppRoutes.configSeatMap:
+        RoomModel? room;
+        String? roomId;
+        String? cinemaId;
+        String? roomName;
+        if (settings.arguments is RoomModel) {
+          room = settings.arguments as RoomModel;
+        } else if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          if (map['room'] is RoomModel) room = map['room'] as RoomModel;
+          roomId = map['roomId'] as String?;
+          cinemaId = map['cinemaId'] as String?;
+          roomName = map['roomName'] as String?;
+        }
+        return MaterialPageRoute(
+          builder: (_) => SeatMapDesignerScreen(
+            room: room,
+            roomId: roomId,
+            cinemaId: cinemaId,
+            roomName: roomName,
+          ),
+          settings: settings,
+        );
+
+      // S25 Cinemas & Rooms Configuration
+      case AppRoutes.manageRooms:
+        return MaterialPageRoute(
+          builder: (_) => const CinemasRoomsScreen(),
+          settings: settings,
+        );
+
+      // S26 Dynamic Pricing Settings
+      case AppRoutes.configPricing:
+        return MaterialPageRoute(
+          builder: (_) => const PricingSettingsScreen(),
+          settings: settings,
+        );
+
+      // S27 Voucher & Promotion Management
+      case AppRoutes.manageVouchers:
+        return MaterialPageRoute(
+          builder: (_) => const VouchersManagementScreen(),
+          settings: settings,
+        );
+
+      // S28 Manager Accounts Management
+      case AppRoutes.manageManagers:
+        return MaterialPageRoute(
+          builder: (_) => const ManagersManagementScreen(),
+          settings: settings,
+        );
+
+      // S29 System Audit Logs Viewer
+      case AppRoutes.auditLogs:
+        return MaterialPageRoute(
+          builder: (_) => const AuditLogsScreen(),
+          settings: settings,
+        );
+
+      // S31 Customer Support Chat
+      case AppRoutes.supportChat:
+        String? cinemaId;
+        String? bookingCode;
+        if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          cinemaId = map['cinemaId'] as String?;
+          bookingCode = map['bookingCode'] as String?;
+        } else if (settings.arguments is String) {
+          cinemaId = settings.arguments as String?;
+        }
+        return MaterialPageRoute(
+          builder: (_) => SupportChatScreen(
+            cinemaId: cinemaId,
+            initialBookingCode: bookingCode,
+          ),
           settings: settings,
         );
 

@@ -155,7 +155,8 @@ class StaffCounterProvider extends ChangeNotifier {
 
   /// Hoàn tất xuất vé tại quầy (tiền mặt / quẹt thẻ).
   Future<bool> completeSale(String paymentMethod) async {
-    if (_selectedShowtime == null || _bookingCode == null) return false;
+    if (_selectedShowtime == null) return false;
+    _bookingCode ??= _generateBookingCode();
 
     _isLoading = true;
     _errorMessage = null;

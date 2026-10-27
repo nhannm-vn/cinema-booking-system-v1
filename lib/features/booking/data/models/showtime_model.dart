@@ -74,4 +74,41 @@ class ShowtimeModel {
       'sold_seats': soldSeats,
     };
   }
+
+  ShowtimeModel copyWith({
+    String? id,
+    String? movieId,
+    String? cinemaId,
+    String? roomId,
+    String? format,
+    DateTime? startTime,
+    DateTime? endTime,
+    String? status,
+    String? cancelReason,
+    int? totalSeats,
+    int? soldSeats,
+    int? minPrice,
+    String? movieTitle,
+    String? roomName,
+    String? cinemaName,
+    bool? isCancelled,
+  }) {
+    return ShowtimeModel(
+      id: id ?? this.id,
+      movieId: movieId ?? this.movieId,
+      cinemaId: cinemaId ?? this.cinemaId,
+      roomId: roomId ?? this.roomId,
+      format: format ?? this.format,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      status: (isCancelled ?? this.isCancelled) ? 'cancelled' : (status ?? this.status),
+      cancelReason: cancelReason ?? this.cancelReason,
+      totalSeats: totalSeats ?? this.totalSeats,
+      soldSeats: soldSeats ?? this.soldSeats,
+      minPrice: minPrice ?? this.minPrice,
+      movieTitle: movieTitle ?? this.movieTitle,
+      roomName: roomName ?? this.roomName,
+      cinemaName: cinemaName ?? this.cinemaName,
+    );
+  }
 }
