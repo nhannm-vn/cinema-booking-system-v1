@@ -105,14 +105,14 @@ Ghế đôi    = 2 × base[format] + couple + (cuối tuần ? weekend : 0) + (g
 | Số ghế tối đa | **8 ghế** mỗi lần đặt. Vượt quá: cảnh báo `warning` |
 | Thời gian giữ online | **5 phút** kể từ khi bấm TIẾP TỤC ở S06 |
 | Thời gian giữ quầy | **3 phút** |
-| Ghế trống | Không có doc trong `showtimes/{sid}/seats/{seatId}` |
-| Ghế đang giữ | Doc có `status: holding` và `holdUntil > now` |
-| Ghế đã bán | Doc có `status: sold` |
-| Chống trùng (SEAT-03) | Transaction đọc các ghế, nếu có ghế `sold` hoặc `holding` còn hạn của người khác → `SeatTakenException(seatId)`, thông báo: "Ghế [X] vừa có người chọn. Vui lòng chọn ghế khác." |
-| Hết hạn lười | Ghế `holding` quá `holdUntil` được hiển thị là trống. Không cần cronjob |
-| Tối đa một đơn giữ | Khi khách bắt đầu đơn mới, nhả đơn `holding` cũ trong cùng transaction |
+| Ghế trống | Không có dòng trong bảng `seats` với `(showtime_id, seat_id)` |
+| Ghế đang giữ | Dòng trong `seats` có `status = 'holding'` và `hold_until > now()` |
+| Ghế đã bán | Dòng trong `seats` có `status = 'sold'` |
+| Chống trùng (SEAT-03) | Postgres RPC `hold_seats` khóa suất chiếu (`for update`), kiểm tra các ghế. Nếu có ghế `sold` hoặc `holding` còn hạn của người khác → ném lỗi `SEAT_TAKEN:<seat_id>`, client nhận và ném `SeatTakenException(seatId)` |
+| Hết hạn lười | Ghế `holding` quá `hold_until` được coi là trống ở client. Không cần cronjob xóa |
+| Tối đa một đơn giữ | Khi khách bắt đầu đơn mới, nhả đơn `holding` cũ trong cùng RPC `hold_seats` |
 
-**Nhả ghế:** thoát S06/S07/S08 hoặc hết giờ → xóa các seat doc của mình, `booking.status = expired`, payment đang `pending` → `expired`.
+**Nhả ghế:** thoát S06/S07/S08 hoặc hết giờ → gọi RPC `release_hold(code)`, xóa các dòng ghế của mình trong `seats`, `booking.status = 'expired'`, payment `pending` → `expired`.
 
 **Thoát S06 sau khi đã giữ ghế:** hộp xác nhận "Rời khỏi và nhả ghế?".
 
@@ -129,20 +129,18 @@ Hiển thị ở client (tính khi đọc, không lưu):
 - `paid` quá **15 phút** sau giờ chiếu mà chưa soát vé → `noShow`.
 
 ### 6.2 Luồng thanh toán VNPay
-1. Kiểm tra booking còn `holding` và chưa quá `holdUntil`.
-2. Tạo doc `bookings/{code}/payments/{txnRef}` với `status = pending`. `txnRef = ${bookingCode}-${yyMMddHHmmss}`.
-3. Tạo URL VNPay:
-   - `vnp_Amount = priceSnapshot.total × 100`
-   - `vnp_TxnRef = txnRef`
-   - `vnp_CreateDate`, `vnp_ExpireDate` = thời điểm hết hạn giữ ghế
-   - `vnp_Command = pay`, `vnp_CurrCode = VND`, `vnp_Locale = vn`, `vnp_OrderType = other`, `vnp_Version = 2.1.0`
-   - `vnp_ReturnUrl`, `vnp_IpAddr`, `vnp_TmnCode`, `vnp_OrderInfo`
-   - Sắp xếp key theo ASCII tăng dần, HMAC-SHA512 bằng `hashSecret`, gán `vnp_SecureHash`.
-4. Mở WebView, chặn `NavigationDelegate` khi URL bắt đầu bằng `vnp_ReturnUrl`.
-5. Xác minh chữ ký trả về. Nếu sai → coi như thất bại, không tin mã trả về.
-6. `vnp_ResponseCode == "00"` → transaction `confirmPaid`: booking `paid`, ghế `sold`, `soldSeats` tăng, `foodStatus` là `pending` nếu có đồ ăn, payment `success`, tạo thông báo, điều hướng S09.
-7. Mã khác hoặc người dùng thoát → đóng WebView, giữ booking `holding`, hiện lỗi, cho thử lại với `txnRef` mới nếu còn thời gian giữ ghế.
-8. Hết giờ giữ ghế khi đang ở WebView → đóng WebView, về S06, booking `expired`.
+1. Kiểm tra booking còn `holding` và chưa quá `hold_until`.
+2. Tạo dòng trong bảng `payments` với `status = pending`, `txn_ref = ${bookingCode}-${yyMMddHHmmss}`.
+3. App gọi Supabase Edge Function `create-vnpay-url` gửi `booking_code` và `txn_ref`:
+   - Edge Function đọc `bookings.price_snapshot` trực tiếp từ DB (không nhận tiền từ client).
+   - Tạo các tham số chuẩn VNPay (`vnp_Amount = price_snapshot.total × 100`, `vnp_TxnRef`, v.v.).
+   - Sắp xếp key ASCII, ký HMAC-SHA512 bằng `VNPAY_HASH_SECRET` an toàn ở server và trả về URL thanh toán.
+4. Mở `webview_flutter` với URL được trả về.
+5. Khi thanh toán xong, WebView redirect về `vnpay-return` (Edge Function):
+   - Edge Function xác minh chữ ký `vnp_SecureHash` và số tiền khớp `price_snapshot.total × 100`.
+   - Nếu `vnp_ResponseCode == "00"`: Edge Function gọi RPC `confirm_payment` bằng service role: booking `paid`, ghế `sold`, tăng `sold_seats`, `food_status = pending` nếu có món ăn, cập nhật `payments.status = success`, tạo notification và điều hướng S09.
+6. Mã khác hoặc người dùng thoát: đóng WebView, giữ booking `holding`, hiển thị lỗi, cho phép thử lại với `txn_ref` mới nếu còn thời gian giữ ghế.
+7. Hết giờ giữ ghế khi đang ở WebView: đóng WebView, về S06, booking `expired`.
 
 ### 6.3 Thanh toán tại quầy (S21)
 - Không tạo doc `payments`. Ghi `paymentMethod` (`cash` hoặc `card`) và `paidAt` trên booking.
@@ -227,9 +225,9 @@ Nếu hợp lệ: `status = used`, `checkedInBy`, `checkedInAt`, ghi `auditLogs`
 
 ## 12. Quản lý nhân sự
 
-- **Tạo Manager (Admin):** họ tên, email, mật khẩu tạm, chọn rạp. Ghi `users/{uid}` với `role = manager`.
-- **Tạo Staff (Manager, Admin):** họ tên, email, SĐT, mật khẩu tạm. Rạp tự gán theo Manager; Admin chọn rạp. Dùng FirebaseApp phụ để không đăng xuất người đang thao tác.
-- **Khóa tài khoản:** đặt `isLocked = true`. Khi đăng nhập, nếu bị khóa: thông báo "Tài khoản đã bị khóa", gọi `signOut()`.
+- **Tạo Manager (Admin):** họ tên, email, mật khẩu tạm, chọn rạp. Ghi `profiles` với `role = 'manager'`.
+- **Tạo Staff (Manager, Admin):** gọi Edge Function `create-staff` (sử dụng service role key ở server). Rạp tự gán theo Manager; Admin chọn rạp. Không bị đăng xuất Manager đang thao tác.
+- **Khóa tài khoản:** đặt `profiles.is_locked = true` và gọi `signOut` cưỡng chế. RLS tự động vô hiệu hóa toàn bộ quyền truy cập dữ liệu của user bị khóa.
 - **Lỗi trùng email:** thông báo rõ, không tạo bản ghi nửa vời.
 
 ---
@@ -315,21 +313,20 @@ Booking:  holding ──thanh toán OK──► paid ──soát vé──► us
 
 ---
 
-## 19. Giới hạn kỹ thuật đã chấp nhận (ghi vào báo cáo)
-
-- Không có server nên client tự tính giá và tự xác minh chữ ký VNPay. Chỉ phù hợp sandbox.
-- Giờ giữ ghế dùng đồng hồ máy khách. Rules đối chiếu bằng `request.time`. Lệch giờ nhỏ không ảnh hưởng demo.
-- Khóa tài khoản là cờ `isLocked`, không vô hiệu hóa được tài khoản Auth nếu không có Admin SDK.
-- Hủy suất ghi theo batch ở client, có thể bị gián đoạn giữa chừng nếu mất mạng. Cần kiểm tra và chạy lại.
+## 19. Giới hạn kỹ thuật và phương án kiến trúc
+- Logic nhạy cảm (giữ ghế, thanh toán, hủy vé) chạy an toàn bằng Postgres RPC functions phía DB.
+- Chữ ký bí mật `VNPAY_HASH_SECRET` và Supabase Service Role Key được bảo vệ tuyệt đối trong Supabase Edge Functions.
+- Sơ đồ ghế cập nhật thời gian thực bằng Supabase Realtime lắng nghe bảng `seats`.
+- Hủy suất được thực hiện qua RPC `cancel_showtime` chạy trọn vẹn trong một transaction PostgreSQL.
 
 ---
 
 ## 20. Đối chiếu nhanh khi viết code
 
-- [ ] Giá đọc từ `settings/pricing`, không hardcode. Snapshot khi tạo booking.
-- [ ] Ghế đổi trạng thái trong `runTransaction`.
-- [ ] Mọi query Staff và Manager có `cinemaId`.
-- [ ] `vnp_ResponseCode == "00"` chỉ được tin sau khi xác minh chữ ký.
+- [ ] Giá đọc từ bảng `pricing_settings`, không hardcode. Snapshot vào `price_snapshot` khi tạo booking.
+- [ ] Ghế đổi trạng thái qua RPC `hold_seats` (khóa dòng `for update` trên bảng `showtimes`).
+- [ ] Mọi query của Staff và Manager có `.eq('cinema_id', currentCinemaId)` (và được RLS bảo vệ kép).
+- [ ] Thanh toán VNPay tạo URL và xác minh chữ ký qua Edge Function, gọi RPC `confirm_payment`.
 - [ ] Thông báo lỗi dùng đúng câu trong mục 8 và mục 5.
-- [ ] Hủy vé kiểm tra ≥ 2 giờ trước giờ chiếu.
-- [ ] Soát vé kiểm tra đủ 6 điều kiện theo thứ tự mục 8.
+- [ ] Hủy vé kiểm tra ≥ 2 giờ trước giờ chiếu qua RPC `cancel_booking`.
+- [ ] Soát vé kiểm tra đủ 6 điều kiện theo thứ tự mục 8 qua RPC `check_in`.

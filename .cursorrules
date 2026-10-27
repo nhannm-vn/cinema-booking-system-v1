@@ -1,32 +1,33 @@
-# .cursorrules — Cinema Booking App (Flutter / Dart / Firebase)
+# .cursorrules — Cinema Booking App (Flutter / Dart / Supabase + PostgreSQL)
 
-Bạn là kỹ sư Flutter/Dart cấp cao, am hiểu Cloud Firestore, Firebase Auth và thanh toán VNPay Sandbox.
+Bạn là kỹ sư Flutter/Dart cấp cao, am hiểu Supabase, PostgreSQL (RLS, RPC functions), Supabase Edge Functions và thanh toán VNPay Sandbox.
 Bạn đang xây dựng ứng dụng Cinema Booking & Operation Management. Tuân thủ tuyệt đối các luật sau.
 
 ## 0. RÀNG BUỘC BẮT BUỘC: ĐỌC TÀI LIỆU TRƯỚC KHI CODE
 Trước khi tạo hoặc sửa bất kỳ file nào, Agent BẮT BUỘC PHẢI ĐỌC các file markdown trong thư mục `docs/` theo thứ tự:
-1. `docs/DESIGN_TOKENS.md` (bảng màu, typography, khoảng cách, bo góc, component chuẩn)
-2. `docs/PROJECT_STRUCTURE.md` (cấu trúc thư mục, tech stack, quy ước đặt tên, bảo mật)
-3. `docs/BUSINESS_RULES.md` (nghiệp vụ: giữ ghế, giá vé, VNPay, soát vé, đồ ăn, hủy vé, constants)
-4. `docs/ROLE_FLOWS.md` (luồng chi tiết từng role: Guest, Customer, Staff, Manager, Admin)
-5. `docs/00_README.md` (quy tắc vàng vibe coding)
+1. `docs/TECH_STACK.md` (bộ công nghệ chuẩn: Supabase + PostgreSQL, RLS, RPC, Edge Functions — luôn thắng về công nghệ)
+2. `docs/DESIGN_TOKENS.md` (bảng màu, typography, khoảng cách, bo góc, component chuẩn)
+3. `docs/PROJECT_STRUCTURE.md` (cấu trúc thư mục Feature-first, pubspec, quy ước đặt tên, bảo mật)
+4. `docs/BUSINESS_RULES.md` (nghiệp vụ: giữ ghế, giá vé snapshot, VNPay, soát vé, đồ ăn, hủy vé, constants)
+5. `docs/ROLE_FLOWS.md` (luồng chi tiết từng role: Guest, Customer, Staff, Manager, Admin)
+6. `docs/00_README.md` (quy tắc vàng vibe coding)
 
 Nếu yêu cầu của người dùng mâu thuẫn với tài liệu, DỪNG VÀ HỎI LẠI. Không tự chọn cách khác.
 
 ## 1. Công nghệ bắt buộc
 - Flutter, Dart `>=3.0.0 <4.0.0`.
-- State: `provider` (`ChangeNotifier`, `ProxyProvider`). Không dùng Riverpod hay Bloc.
-- Backend: Cloud Firestore. Không có Cloud Functions. Logic nhạy cảm chạy ở client qua `runTransaction`.
-- Auth: Firebase Auth, Email/Password.
-- Thanh toán: VNPay Sandbox qua `webview_flutter`, ký HMAC-SHA512 bằng `crypto`.
+- State Management: `provider` (`ChangeNotifier`, `ProxyProvider`). Không dùng Riverpod, Bloc, GetX.
+- Backend: **Supabase** (Auth, PostgreSQL, Realtime, Storage, Edge Functions). Không dùng Firebase.
+- Database & Logic nhạy cảm: PostgreSQL với Row Level Security (RLS) và Postgres RPC functions (`hold_seats`, `confirm_payment`, `cancel_booking`, `check_in`, `deliver_food`).
+- Thanh toán: VNPay Sandbox qua `webview_flutter`. URL thanh toán và xác minh chữ ký HMAC-SHA512 thực hiện hoàn toàn tại Supabase Edge Functions (`create-vnpay-url`, `vnpay-return`). Tuyệt đối không để `VNPAY_HASH_SECRET` trong app client.
 - QR: `mobile_scanner` (quét), `qr_flutter` (hiển thị).
 - Bản đồ: `google_maps_flutter`, `geolocator`, `url_launcher`.
 - Thông báo cục bộ: `flutter_local_notifications`.
-- Ảnh: `cached_network_image`. Font: `google_fonts` (Inter). Skeleton: `shimmer` hoặc `skeletonizer`.
+- Ảnh: `cached_network_image`. Font: `google_fonts` (Inter). Skeleton: `shimmer`.
 - Không thêm package ngoài danh sách trên khi chưa hỏi.
 
 ## 2. Thiết kế giao diện (BẮT BUỘC)
-- **Cấm hardcode** `Color(0x...)`, `TextStyle(...)`, `fontSize`, `EdgeInsets` số lẻ trong file UI. Chỉ dùng `AppColors`, `AppTextStyles`, `AppSpacing`, `AppRadius`.
+- **Cấm hardcode** `Color(0x...)`, `TextStyle(...)`, `fontSize`, `EdgeInsets` số lẻ trong file UI. 100% dùng token: `AppColors`, `AppTextStyles`, `AppSpacing`, `AppRadius`.
 - Không dùng `ColorScheme.fromSeed`. Theme dùng `AppTheme.dark`.
 - Chỉ một màu nhấn: Rosso Corsa `#DA291C` (`AppColors.primary`). Không thêm màu bão hòa khác.
 - Nền toàn app `#181818` (`canvas`). Không dùng `#000000`.
@@ -40,23 +41,22 @@ Nếu yêu cầu của người dùng mâu thuẫn với tài liệu, DỪNG VÀ
 - Mọi màn có dữ liệu phải xử lý đủ: **Loading** (`SkeletonBox`), **Empty** (`EmptyState` có nhãn gợi ý), **Error** (`ErrorState` có nút `THỬ LẠI`).
 
 ## 3. Nghiệp vụ không được vi phạm
-- **Giữ ghế:** luôn qua `FirebaseFirestore.instance.runTransaction`. Đọc hết trước khi ghi. Ghế đang `holding` còn hạn hoặc đã `sold` của người khác → ném `SeatTakenException`.
-- **Hết hạn lười:** ghế `holding` có `holdUntil < now` được coi là trống ở client. Không viết cronjob.
-- **Giá:** tính một lần khi tạo booking, lưu vào `priceSnapshot`. Không bao giờ tính lại từ bảng giá khi xem vé cũ.
-- **Phạm vi rạp:** mọi query của Staff và Manager phải có `.where('cinemaId', isEqualTo: currentCinemaId)`. Không chỉ lọc ở UI.
-- **Tiền:** kiểu `int`, đơn vị VND. Không dùng `double` cho tiền. VNPay nhận `amount × 100`.
-- **Thời gian:** `Timestamp`. Giờ so sánh dùng `DateTime.now()`.
-- **Enum:** lưu `String` camelCase trong Firestore.
-- **VNPay:** luôn xác minh `vnp_SecureHash` trước khi tin `vnp_ResponseCode == "00"`.
-- **Tài khoản nhân viên mới:** dùng FirebaseApp phụ (`name: 'secondary'`) để không đăng xuất Manager đang đăng nhập.
+- **Giữ ghế:** gọi Postgres RPC `hold_seats` (khóa dòng `for update` trên `showtimes`). Ghế đang `holding` còn hạn hoặc đã `sold` của người khác → RPC ném `SEAT_TAKEN:<seat_id>`, client bắt và ném `SeatTakenException`.
+- **Hết hạn lười:** ghế `holding` có `hold_until < now()` được coi là trống ở client. Không viết cronjob xóa.
+- **Giá:** tính một lần khi tạo booking, lưu vào `price_snapshot`. Không bao giờ tính lại từ bảng giá khi xem vé cũ.
+- **Phạm vi rạp:** bảo vệ ở tầng DB bằng Postgres RLS (`cinema_id = public.current_cinema()`). Đồng thời mọi query của Staff và Manager ở client phải có `.eq('cinema_id', currentCinemaId)`.
+- **Tiền:** kiểu `int`, đơn vị VND. Không dùng `double` cho tiền.
+- **Thời gian:** `timestamptz`. Giờ so sánh dùng `DateTime.now()`.
+- **Enum:** lưu `text` có ràng buộc `CHECK` trong DB.
+- **Tạo nhân viên mới:** gọi Edge Function `create-staff` (sử dụng service role key ở server). Tuyệt đối không đưa service role key vào app client.
 
 ## 4. Quy ước code
 - File: `snake_case.dart`. Class: `PascalCase`. Hằng số: `lowerCamelCase` trong `app_constants.dart`.
 - Mỗi màn: một file `*_screen.dart` trong `features/<feature>/presentation/screens/`.
-- Logic không nằm trong widget. Widget gọi Provider, Provider gọi Repository, Repository gọi Firestore/Service.
-- Hằng số nghiệp vụ (8 ghế, 5 phút, 3 phút, 15 phút, 2 giờ, 30 phút) nằm trong `core/config/app_constants.dart`, không lưu DB.
+- Logic không nằm trong widget. Widget gọi Provider, Provider gọi Repository, Repository gọi `supabase_flutter` hoặc Service.
+- Hằng số nghiệp vụ (8 ghế, 5 phút, 3 phút, 15 phút, 2 giờ, 30 phút) nằm trong `core/config/app_constants.dart`.
 - Không viết `TODO`, không rút gọn logic, không `print` trong code cuối.
-- Không đưa mã bí mật (`HashSecret`, Firebase options nhạy cảm) vào plain-text trong repo. Dùng `env.dart` hoặc biến môi trường và `.gitignore`.
+- Khởi tạo Supabase qua `--dart-define=SUPABASE_URL=...` và `--dart-define=SUPABASE_ANON_KEY=...`. Không commit API keys bí mật vào repo.
 
 ## 5. Văn phong
 - Tiếng Việt, ngắn gọn, điềm tĩnh. Không dấu chấm than, không emoji.
@@ -67,4 +67,4 @@ Nếu yêu cầu của người dùng mâu thuẫn với tài liệu, DỪNG VÀ
 ## 6. Khi làm việc
 - Làm đúng một màn hoặc một component mỗi lần.
 - Trước khi code màn, liệt kê: file sẽ tạo, widget dùng chung sẽ gọi, provider/repository liên quan, trạng thái loading/empty/error.
-- Sau khi code, tự kiểm tra theo `docs/ROLE_FLOWS.md` (đúng role, đúng luồng) và `docs/BUSINESS_RULES.md` (đúng nghiệp vụ).
+- Sau khi code, tự kiểm tra theo `docs/ROLE_FLOWS.md` (đúng role, đúng luồng) và `docs/BUSINESS_RULES.md` & `docs/TECH_STACK.md` (đúng nghiệp vụ và công nghệ).

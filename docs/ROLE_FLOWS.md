@@ -16,8 +16,8 @@
 | Admin | TỔNG QUAN · QUẢN LÝ · TÀI KHOẢN | S22 |
 
 **Quy tắc chung:**
-- Sau đăng nhập, app đọc `users/{uid}.role` và vào đúng bộ tab.
-- Tài khoản `isLocked == true`: báo "Tài khoản đã bị khóa", gọi `signOut()`, quay về S01.
+- Sau đăng nhập, app đọc `profiles.role` và vào đúng bộ tab.
+- Tài khoản `is_locked == true`: báo "Tài khoản đã bị khóa", gọi `signOut()`, quay về S01.
 - Luồng đặt vé không hiện bottom nav và có nút back về bước trước.
 - Chuông thông báo (S30) có badge chưa đọc ở AppBar của S03, S17, S10, S11, S18, S22.
 
@@ -43,7 +43,7 @@
 1. S01 → chọn "CHƯA CÓ TÀI KHOẢN? ĐĂNG KÝ".
 2. S02: họ tên, email, SĐT (10 số), mật khẩu (≥6 ký tự), nhập lại mật khẩu.
 3. Validate từng trường. Email trùng: "Email đã được sử dụng".
-4. Tạo Firebase Auth user, ghi `users/{uid}` với `role = customer`, `isLocked = false`.
+4. Tạo Supabase Auth user, trigger tự động ghi dòng `profiles` với `role = 'customer'`, `is_locked = false`.
 5. Đăng nhập luôn, quay về màn đang chờ (nếu có) hoặc S03.
 
 ---
@@ -72,15 +72,15 @@
 - Ngày không có suất: "Chưa có suất chiếu trong ngày này".
 
 ### Bước 4: Chọn ghế (S06) — màn trọng tâm
-1. Mở sơ đồ từ `seatLayout` của phòng ghép với `showtimes/{sid}/seats`. Loading: skeleton lưới.
+1. Mở sơ đồ từ `seatLayout` của phòng ghép với dữ liệu bảng `seats` (lắng nghe Realtime). Loading: skeleton lưới.
 2. Chạm ghế trống: chọn. Chạm lại: bỏ chọn.
 3. Ghế đã bán hoặc người khác đang giữ: thông báo nhẹ "Ghế này không còn trống".
 4. Chọn đến 8 ghế. Vượt quá: snackbar `warning`.
 5. Thanh dưới: "2 GHẾ · A5, A6" và tổng tiền (tính tạm từ bảng giá đã cache, chốt lại ở bước 8).
-6. Bấm TIẾP TỤC → transaction `holdSeats` (BUSINESS_RULES mục 5):
-   - Thành công: ghi booking `holding`, `holdUntil = now + 5 phút`. Sang S07.
-   - Lỗi `SeatTakenException`: "Ghế [X] vừa có người chọn. Vui lòng chọn ghế khác." Làm mới sơ đồ, giữ các ghế còn lại.
-7. Thoát khi đã giữ ghế → hộp xác nhận "Rời khỏi và nhả ghế?". Đồng ý: `releaseHold()`.
+6. Bấm TIẾP TỤC → gọi RPC `hold_seats` (TECH_STACK mục 5.1):
+   - Thành công: ghi booking `holding`, `hold_until = now + 5 phút`. Sang S07.
+   - Lỗi `SeatTakenException` (do RPC ném `SEAT_TAKEN:<seat_id>`): "Ghế [X] vừa có người chọn. Vui lòng chọn ghế khác." Làm mới sơ đồ, giữ các ghế còn lại.
+7. Thoát khi đã giữ ghế → hộp xác nhận "Rời khỏi và nhả ghế?". Đồng ý: gọi RPC `release_hold(code)`.
 
 ### Bước 5: Chọn đồ ăn (S07, có thể bỏ qua)
 1. Đồng hồ giữ ghế ở đầu màn. Dưới 60 giây: chuyển `warning`.
@@ -96,12 +96,12 @@
 4. Đồng hồ giữ ghế hiển thị.
 5. Bấm THANH TOÁN QUA VNPAY:
    - Kiểm tra booking còn `holding`. Quá hạn → dialog, về S06.
-   - Tạo payment `pending`, tạo URL ký HMAC-SHA512.
+   - Ghi nhận payment `pending`, gọi Edge Function `create-vnpay-url` lấy URL thanh toán đã ký.
    - Mở `VNPayWebViewScreen` với URL.
 6. Trong WebView:
    - Khách thanh toán bằng thẻ test sandbox.
-   - Chặn return URL, xác minh chữ ký.
-   - `00` → `confirmPaid` → S09.
+   - Redirect về Edge Function `vnpay-return`: xác minh chữ ký, gọi RPC `confirm_payment`.
+   - `00` thành công → điều hướng S09.
    - Mã khác hoặc hủy → đóng WebView, thông báo lỗi, ở lại S08, booking vẫn `holding`.
    - Hết giờ giữ ghế → đóng WebView, về S06.
 
@@ -244,7 +244,7 @@ Hiển thị đúng bảng quyền dưới đây:
 
 ### 4.8 Nhân viên (S23)
 1. Danh sách nhân viên của rạp: họ tên, email, ĐANG HOẠT ĐỘNG hoặc ĐÃ KHÓA.
-2. THÊM NHÂN VIÊN: họ tên, email, SĐT, mật khẩu tạm. Rạp tự gán. Tạo bằng FirebaseApp phụ.
+2. THÊM NHÂN VIÊN: họ tên, email, SĐT, mật khẩu tạm. Rạp tự gán. Tạo qua Edge Function `create-staff` (service role).
 3. Chạm nhân viên: KHÓA TÀI KHOẢN hoặc MỞ KHÓA, có hộp xác nhận.
 4. Rỗng: "Rạp chưa có nhân viên". Lỗi trùng email: thông báo rõ.
 
