@@ -16,6 +16,7 @@ import 'features/notifications/presentation/controllers/notification_provider.da
 import 'features/staff_counter/presentation/controllers/staff_counter_provider.dart';
 import 'features/staff_checkin/presentation/controllers/checkin_provider.dart';
 import 'features/staff_food/presentation/controllers/staff_food_provider.dart';
+import 'shared/screens/supabase_setup_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,16 @@ class CinemaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Nếu chưa cấu hình Supabase URL & Anon Key, hiển thị màn hình hướng dẫn Setup thay vì crash Assertion
+    if (!SupabaseConfig.isConfigured) {
+      return MaterialApp(
+        title: 'Cinema Booking - Cấu Hình Supabase',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.dark,
+        home: const SupabaseSetupScreen(),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
