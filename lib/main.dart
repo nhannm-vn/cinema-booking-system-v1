@@ -21,6 +21,8 @@ import 'shared/screens/supabase_setup_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await SupabaseConfig.initialize();
+
   if (SupabaseConfig.isConfigured) {
     await Supabase.initialize(
       url: SupabaseConfig.url,

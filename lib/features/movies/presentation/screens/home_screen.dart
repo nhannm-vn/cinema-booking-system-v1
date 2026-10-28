@@ -196,30 +196,42 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.58,
-                crossAxisSpacing: AppSpacing.xs,
-                mainAxisSpacing: AppSpacing.sm,
-              ),
-              itemCount: results.length,
-              itemBuilder: (context, index) {
-                final movie = results[index];
-                return MovieCard(
-                  key: Key('movie_card_${movie.id}'),
-                  title: movie.title,
-                  posterUrl: movie.posterUrl,
-                  ageRating: movie.ageRating,
-                  genres: movie.genres.join(', '),
-                  durationMin: movie.durationMin,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.movieDetail,
-                      arguments: movie,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxisCount = width > 1100
+                    ? 5
+                    : width > 800
+                        ? 4
+                        : width > 550
+                            ? 3
+                            : 2;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.58,
+                    crossAxisSpacing: AppSpacing.xs,
+                    mainAxisSpacing: AppSpacing.sm,
+                  ),
+                  itemCount: results.length,
+                  itemBuilder: (context, index) {
+                    final movie = results[index];
+                    return MovieCard(
+                      key: Key('movie_card_${movie.id}'),
+                      title: movie.title,
+                      posterUrl: movie.posterUrl,
+                      ageRating: movie.ageRating,
+                      genres: movie.genres.join(', '),
+                      durationMin: movie.durationMin,
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.movieDetail,
+                          arguments: movie,
+                        );
+                      },
                     );
                   },
                 );
@@ -267,30 +279,42 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: AppSpacing.xs),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.58,
-                crossAxisSpacing: AppSpacing.xs,
-                mainAxisSpacing: AppSpacing.sm,
-              ),
-              itemCount: nowShowing.length,
-              itemBuilder: (context, index) {
-                final movie = nowShowing[index];
-                return MovieCard(
-                  key: Key('now_showing_card_${movie.id}'),
-                  title: movie.title,
-                  posterUrl: movie.posterUrl,
-                  ageRating: movie.ageRating,
-                  genres: movie.genres.join(', '),
-                  durationMin: movie.durationMin,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.movieDetail,
-                      arguments: movie,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxisCount = width > 1100
+                    ? 5
+                    : width > 800
+                        ? 4
+                        : width > 550
+                            ? 3
+                            : 2;
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.58,
+                    crossAxisSpacing: AppSpacing.xs,
+                    mainAxisSpacing: AppSpacing.sm,
+                  ),
+                  itemCount: nowShowing.length,
+                  itemBuilder: (context, index) {
+                    final movie = nowShowing[index];
+                    return MovieCard(
+                      key: Key('now_showing_card_${movie.id}'),
+                      title: movie.title,
+                      posterUrl: movie.posterUrl,
+                      ageRating: movie.ageRating,
+                      genres: movie.genres.join(', '),
+                      durationMin: movie.durationMin,
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.movieDetail,
+                          arguments: movie,
+                        );
+                      },
                     );
                   },
                 );

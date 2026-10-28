@@ -27,7 +27,7 @@ dependencies:
   google_maps_flutter: ^2.6.0
   geolocator: ^11.0.0
 
-  # Thanh toán (WebView hiển thị VNPay)
+  # Thanh toán (SePay VietQR & WebView hiển thị cổng thanh toán)
   webview_flutter: ^4.7.0
 
   # Thông báo cục bộ

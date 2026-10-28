@@ -56,16 +56,7 @@ begin
   where s.booking_code = b.code and b.user_id = v_uid and b.status = 'expired'
     and s.status = 'holding';
 
-  -- Ghi ghế
-  insert into public.seats (showtime_id, seat_id, status, booking_code, hold_holder, hold_until)
-  select p_showtime_id, unnest(p_seat_ids), 'holding', p_booking_code, v_uid, v_until
-  on conflict (showtime_id, seat_id) do update
-    set status = 'holding',
-        booking_code = excluded.booking_code,
-        hold_holder = excluded.hold_holder,
-        hold_until = excluded.hold_until;
-
-  -- Ghi booking
+  -- Ghi booking trước để có khóa chính booking_code
   insert into public.bookings (
     code, user_id, channel, status, hold_until, food_status, price_snapshot,
     showtime_id, cinema_id, movie_title, poster_url, age_rating, cinema_name,
@@ -96,6 +87,15 @@ begin
     seats = excluded.seats,
     foods = excluded.foods;
 
+  -- Ghi ghế sau (thỏa mãn foreign key seats_booking_code_fkey)
+  insert into public.seats (showtime_id, seat_id, status, booking_code, hold_holder, hold_until)
+  select p_showtime_id, unnest(p_seat_ids), 'holding', p_booking_code, v_uid, v_until
+  on conflict (showtime_id, seat_id) do update
+    set status = 'holding',
+        booking_code = excluded.booking_code,
+        hold_holder = excluded.hold_holder,
+        hold_until = excluded.hold_until;
+
   return v_until;
 end $$;
 
@@ -103,8 +103,9 @@ end $$;
 create or replace function public.confirm_payment(
   p_booking_code text,
   p_txn_ref text,
-  p_vnp_transaction_no text,
-  p_amount int
+  p_vnp_transaction_no text default null,
+  p_amount int default null,
+  p_sepay_transaction_id text default null
 ) returns void
 language plpgsql
 security definer
@@ -112,7 +113,10 @@ set search_path = public
 as $$
 declare
   b public.bookings%rowtype;
+  v_trans_id text;
 begin
+  v_trans_id := coalesce(p_sepay_transaction_id, p_vnp_transaction_no, '');
+
   select * into b from public.bookings where code = p_booking_code for update;
   if not found then raise exception 'BOOKING_NOT_FOUND'; end if;
   if b.status <> 'holding' then raise exception 'NOT_HOLDING'; end if;
@@ -131,8 +135,9 @@ begin
   update public.bookings set
     status = 'paid',
     hold_until = null,
-    payment_method = 'vnpay',
-    vnp_transaction_no = p_vnp_transaction_no,
+    payment_method = 'sepay',
+    sepay_transaction_id = v_trans_id,
+    vnp_transaction_no = v_trans_id,
     paid_at = now(),
     food_status = case when jsonb_array_length(b.foods) > 0 then 'pending' else 'none' end
   where code = b.code;
@@ -141,7 +146,8 @@ begin
   update public.payments set
     status = 'success',
     response_code = '00',
-    vnp_transaction_no = p_vnp_transaction_no
+    sepay_transaction_id = v_trans_id,
+    vnp_transaction_no = v_trans_id
   where txn_ref = p_txn_ref;
 
   -- Tạo thông báo

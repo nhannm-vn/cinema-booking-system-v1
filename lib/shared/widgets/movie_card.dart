@@ -50,20 +50,11 @@ class MovieCard extends StatelessWidget {
                     imageUrl: posterUrl!,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => const SkeletonBox(),
-                    errorWidget: (_, __, ___) => Container(
-                      color: AppColors.canvasElevated,
-                      child: const Center(
-                        child: Icon(Icons.movie_outlined, color: AppColors.muted, size: 36),
-                      ),
-                    ),
+                    errorWidget: (_, __, ___) => _buildFallbackPoster(),
                   )
                 else
-                  Container(
-                    color: AppColors.canvasElevated,
-                    child: const Center(
-                      child: Icon(Icons.movie_outlined, color: AppColors.muted, size: 36),
-                    ),
-                  ),
+                  _buildFallbackPoster(),
+
 
                 // Top-left Age Rating Badge
                 Positioned(
@@ -96,4 +87,33 @@ class MovieCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildFallbackPoster() {
+    return Container(
+      color: AppColors.canvasElevated,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxs),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.movie_outlined, color: AppColors.primary, size: 36),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                title.toUpperCase(),
+                style: AppTextStyles.captionUppercase.copyWith(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+

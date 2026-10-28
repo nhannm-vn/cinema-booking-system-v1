@@ -179,6 +179,24 @@ begin
     is_locked = excluded.is_locked;
 
   alter table public.profiles enable trigger trg_protect_profile;
+
+  -- 3. Đảm bảo GoTrue Auth không bị lỗi null token và khởi tạo auth.identities
+  update auth.users set
+    confirmation_token = coalesce(confirmation_token, ''),
+    email_change = coalesce(email_change, ''),
+    email_change_token_new = coalesce(email_change_token_new, ''),
+    recovery_token = coalesce(recovery_token, ''),
+    email_change_token_current = coalesce(email_change_token_current, ''),
+    phone_change = coalesce(phone_change, ''),
+    phone_change_token = coalesce(phone_change_token, '');
+
+  insert into auth.identities (
+    id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+  )
+  select
+    id, id, json_build_object('sub', id::text, 'email', email)::jsonb, 'email', id::text, now(), now(), now()
+  from auth.users
+  on conflict (provider, provider_id) do nothing;
 end $$;
 
 -- ----------------------------------------------------------------------------
@@ -227,7 +245,7 @@ insert into public.bookings (
   'paid',
   'pending',
   '{"total": 285000, "base_price": 200000, "food_total": 85000, "discount": 0}'::jsonb,
-  'vnpay',
+  'sepay',
   now(),
   'b1111111-1111-1111-1111-111111111101',
   'cn_q1',

@@ -14,9 +14,9 @@
 | Backend as a Service | `supabase_flutter` ^2.5.0 | Auth, PostgreSQL, Realtime, Storage, Edge Functions |
 | Database & Bảo mật | PostgreSQL + Row Level Security (RLS) | Dữ liệu quan hệ, transaction DB, phân quyền theo role/rạp |
 | Nghiệp vụ nhạy cảm | Postgres functions (RPC) | `hold_seats`, `confirm_payment`, `cancel_booking`, `check_in` |
-| Serverless / Secret | Supabase Edge Functions (Deno/TypeScript) | Tạo URL VNPay (`create-vnpay-url`), Webhook IPN (`vnpay-return`), tạo nhân viên (`create-staff`) |
+| Serverless / Secret | Supabase Edge Functions (Deno/TypeScript) | Tạo thanh toán SePay VietQR (`create-sepay-url`), Webhook SePay (`sepay-webhook`), tạo nhân viên (`create-staff`) |
 | Realtime | Supabase Realtime | Cập nhật trực tiếp trạng thái ghế (`seats`) |
-| Thanh toán | VNPay Sandbox qua `webview_flutter` ^4.7.0 | Mở URL do Edge Function sinh, bắt redirect return |
+| Thanh toán | SePay VietQR và SePay Checkout | Tạo mã VietQR tự động, quét mã chuyển khoản, tự động cập nhật vé |
 | Quét và tạo QR | `mobile_scanner` ^5.1.0, `qr_flutter` ^4.1.0 | Staff quét vé QR, khách hiển thị vé |
 | Bản đồ | `google_maps_flutter` ^2.6.0, `geolocator` ^11.0.0 | Tab RẠP, tính khoảng cách GPS |
 | Thông báo | `flutter_local_notifications` ^17.1.0 | Nhắc suất chiếu trước 1 giờ |
@@ -62,7 +62,7 @@ dependencies:
   google_maps_flutter: ^2.6.0
   geolocator: ^11.0.0
 
-  # Thanh toán (WebView hiển thị VNPay)
+  # Thanh toán (SePay VietQR & WebView hiển thị cổng thanh toán)
   webview_flutter: ^4.7.0
 
   # Thông báo cục bộ
@@ -81,7 +81,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 ```
 
-> **Tuyệt đối không thêm:** `firebase_*`, `crypto` (ký VNPay đã nằm trên Edge Function).
+> **Tuyệt đối không thêm:** `firebase_*`, `crypto` (xử lý thanh toán SePay đã nằm trên Edge Function).
 
 ---
 
@@ -99,8 +99,8 @@ cinema_booking_v1/
 │   │   ├── 0004_triggers.sql          # updated_at, đồng bộ profile
 │   │   └── 0005_seed.sql              # Dữ liệu mẫu (tài khoản, phim, rạp, giá)
 │   └── functions/
-│       ├── create-vnpay-url/index.ts  # Ký HMAC-SHA512, giữ HashSecret ở server
-│       ├── vnpay-return/index.ts      # Xác minh chữ ký, gọi confirm_payment
+│       ├── create-sepay-url/index.ts  # Tạo mã VietQR & URL thanh toán SePay
+│       ├── sepay-webhook/index.ts     # Xác thực webhook, gọi confirm_payment
 │       └── create-staff/index.ts      # Tạo user bằng service role key
 │
 ├── lib/
@@ -172,8 +172,8 @@ cinema_booking_v1/
 │   │   │       └── screens/ showtime_screen.dart, seat_select_screen.dart, food_select_screen.dart
 │   │   │
 │   │   ├── payment/                   # S08
-│   │   │   ├── data/ vnpay_service.dart, payment_repository.dart
-│   │   │   └── presentation/ controllers/payment_provider.dart, screens/checkout_screen.dart, vnpay_webview_screen.dart
+│   │   │   ├── data/ payment_repository.dart
+│   │   │   └── presentation/ screens/checkout_screen.dart, sepay_payment_screen.dart
 │   │   │
 │   │   ├── tickets/                   # S09, S10
 │   │   │   ├── data/ ticket_repository.dart
@@ -292,7 +292,7 @@ void main() async {
 1. **Row Level Security (RLS):** Bật RLS cho 100% các bảng. Khách chỉ xem vé của mình. Staff và Manager chỉ truy cập dữ liệu của rạp mình (`cinema_id = public.current_cinema()`).
 2. **Postgres RPC cho thao tác nhạy cảm:** Khách và nhân viên không insert/update trực tiếp các bảng `bookings`, `seats`, `payments`. Mọi ghi dữ liệu đi qua RPC: `hold_seats`, `confirm_payment`, `cancel_booking`, `check_in`, `deliver_food`.
 3. **Snapshot giá:** `price_snapshot` tính toán và chốt khi tạo booking, không tính lại.
-4. **Bảo mật Secret Key:** `VNPAY_HASH_SECRET` và Supabase `service_role_key` chỉ nằm trong Supabase Edge Functions. Tuyệt đối không đưa vào mã nguồn app client Flutter.
+4. **Bảo mật Secret Key:** `SEPAY_API_KEY` và Supabase `service_role_key` chỉ nằm trong Supabase Edge Functions. Tuyệt đối không đưa vào mã nguồn app client Flutter.
 5. **App Client chỉ dùng Anon Key:** App chỉ giao tiếp qua `SUPABASE_ANON_KEY` được truyền an toàn qua `--dart-define`.
 
 ---
@@ -307,7 +307,7 @@ flutter pub get
 supabase db push
 
 # 3. Deploy Edge Functions
-supabase functions deploy create-vnpay-url vnpay-return create-staff
+supabase functions deploy create-sepay-url sepay-webhook create-staff
 
 # 4. Chạy ứng dụng với dart-define
 flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJ...
@@ -316,6 +316,6 @@ flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SU
 Kiểm thử bắt buộc trước khi bàn giao:
 - [ ] Hai tài khoản cùng giữ một ghế gần như đồng thời: một người thành công, người kia nhận `SeatTakenException` (do `for update` trên bảng `showtimes`).
 - [ ] Giữ ghế quá 5 phút rồi tiếp tục: ghế trả về trống (cơ chế hết hạn lười).
-- [ ] Thanh toán VNPay Sandbox thành công (`confirm_payment` được gọi từ Edge Function) và thất bại (hủy WebView).
+- [ ] Thanh toán SePay VietQR thành công (`confirm_payment` được gọi từ Edge Function) và thất bại (hủy thanh toán).
 - [ ] Staff rạp `cn_q1` quét vé rạp `cn_tb`: báo "Vé thuộc rạp khác".
 - [ ] Manager `cn_q1` không thấy danh sách suất/booking của rạp `cn_tb` (được bảo vệ kép bởi RLS và query client).

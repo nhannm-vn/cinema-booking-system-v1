@@ -393,7 +393,7 @@ class _MoviesManagementScreenState extends State<MoviesManagementScreen> {
                     children: [
                       Switch(
                         value: movie.isActive,
-                        activeColor: AppColors.primary,
+                        activeThumbColor: AppColors.primary,
                         onChanged: (_) => provider.toggleMovieActive(movie),
                       ),
                       IconButton(
@@ -666,7 +666,7 @@ class _MovieFormSheetState extends State<_MovieFormSheet> {
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
                 ),
                 value: _isActive,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) => setState(() => _isActive = val),
               ),

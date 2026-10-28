@@ -125,7 +125,8 @@ create table public.bookings (
   food_delivered_by uuid references public.profiles(id),
   food_delivered_at timestamptz,
   price_snapshot jsonb not null,
-  payment_method text check (payment_method in ('vnpay', 'cash', 'card', 'demo')),
+  payment_method text check (payment_method in ('sepay', 'vnpay', 'cash', 'card', 'demo')),
+  sepay_transaction_id text,
   vnp_transaction_no text,
   paid_at timestamptz,
   checked_in_by uuid references public.profiles(id),
@@ -162,6 +163,7 @@ create table public.payments (
   amount int not null,
   status text not null check (status in ('pending', 'success', 'failed', 'expired')),
   response_code text,
+  sepay_transaction_id text,
   vnp_transaction_no text,
   created_at timestamptz not null default now()
 );

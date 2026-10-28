@@ -318,7 +318,7 @@ class _VouchersManagementScreenState extends State<VouchersManagementScreen> {
                   const SizedBox(width: AppSpacing.xxs),
                   Switch(
                     value: voucher.isActive,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     onChanged: (val) => provider.toggleVoucher(voucher.code, val),
                   ),
                 ],
@@ -590,7 +590,7 @@ class _VoucherFormSheetState extends State<_VoucherFormSheet> {
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
                 ),
                 value: _isActive,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) => setState(() => _isActive = val),
               ),

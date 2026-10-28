@@ -386,7 +386,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                     ),
                     Switch(
                       value: food.isAvailable,
-                      activeColor: AppColors.success,
+                      activeThumbColor: AppColors.success,
                       onChanged: (val) => provider.toggleFood(food.id, val),
                     ),
                     const Spacer(),
@@ -594,7 +594,7 @@ class _FoodFormSheetState extends State<_FoodFormSheet> {
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
                 ),
                 value: _isAvailable,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) => setState(() => _isAvailable = val),
               ),

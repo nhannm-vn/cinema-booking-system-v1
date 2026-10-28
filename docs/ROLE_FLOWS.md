@@ -92,18 +92,18 @@
 ### Bước 6: Thanh toán (S08)
 1. Hiển thị tóm tắt: poster nhỏ, tên phim, rạp · phòng · giờ, ghế, đồ ăn. Chi tiết giá: tiền vé, tiền đồ ăn, giảm giá (nếu có), tổng.
 2. Voucher (S): nhập mã, ÁP DỤNG. Lỗi cụ thể theo BUSINESS_RULES mục 11.
-3. Chọn phương thức: VNPay Sandbox (mặc định). Có "Demo" nếu đã chốt (BUSINESS_RULES mục 18).
+3. Chọn phương thức: SePay (VietQR / Chuyển khoản ngân hàng tự động). Có "Demo" nếu đã chốt (BUSINESS_RULES mục 18).
 4. Đồng hồ giữ ghế hiển thị.
-5. Bấm THANH TOÁN QUA VNPAY:
+5. Bấm THANH TOÁN SEPAY:
    - Kiểm tra booking còn `holding`. Quá hạn → dialog, về S06.
-   - Ghi nhận payment `pending`, gọi Edge Function `create-vnpay-url` lấy URL thanh toán đã ký.
-   - Mở `VNPayWebViewScreen` với URL.
-6. Trong WebView:
-   - Khách thanh toán bằng thẻ test sandbox.
-   - Redirect về Edge Function `vnpay-return`: xác minh chữ ký, gọi RPC `confirm_payment`.
-   - `00` thành công → điều hướng S09.
-   - Mã khác hoặc hủy → đóng WebView, thông báo lỗi, ở lại S08, booking vẫn `holding`.
-   - Hết giờ giữ ghế → đóng WebView, về S06.
+   - Ghi nhận payment `pending`, gọi Edge Function `create-sepay-url` lấy mã VietQR và thông tin chuyển khoản SePay.
+   - Mở màn hình thanh toán SePay (`SepayPaymentScreen`) hoặc WebView.
+6. Trong màn hình thanh toán:
+   - Khách quét mã VietQR bằng app ngân hàng hoặc chuyển khoản theo số tài khoản và nội dung chuyển khoản.
+   - SePay gửi Webhook về Edge Function `sepay-webhook`: xác minh webhook, gọi RPC `confirm_payment`.
+   - Giao dịch thành công → tự động điều hướng sang S09.
+   - Hủy giao dịch → thông báo lỗi, ở lại S08, booking vẫn `holding`.
+   - Hết giờ giữ ghế → đóng thanh toán, về S06.
 
 ### Bước 7: Vé thành công (S09)
 - Dấu tick `success`, "ĐẶT VÉ THÀNH CÔNG".
@@ -226,7 +226,7 @@ Hiển thị đúng bảng quyền dưới đây:
 1. Chip lọc trạng thái: TẤT CẢ · PAID · USED · NOSHOW · CANCELLED · EXPIRED.
 2. Chip kênh: ONLINE · QUẦY.
 3. Hàng: mã booking, tên khách, phim, giờ, tổng tiền, badge trạng thái và kênh.
-4. Chạm hàng: ghế, đồ ăn và trạng thái, phương thức thanh toán, mã giao dịch VNPay, thời gian tạo, ai soát vé và lúc nào, nhân viên bán.
+4. Chạm hàng: ghế, đồ ăn và trạng thái, phương thức thanh toán, mã giao dịch SePay, thời gian tạo, ai soát vé và lúc nào, nhân viên bán.
 5. Vé quầy: HỦY / HOÀN VÉ (S), nhập lý do, ghi nhật ký.
 
 ### 4.5 Menu đồ ăn (S16)
@@ -321,7 +321,7 @@ Có toàn bộ quyền Manager, cộng thêm:
 | S05 Chọn suất | xem | ✔ | | | |
 | S06 Chọn ghế | | ✔ | ✔ (quầy) | | |
 | S07 Đồ ăn | | ✔ | ✔ (quầy) | | |
-| S08 Thanh toán VNPay | | ✔ | | | |
+| S08 Thanh toán SePay | | ✔ | | | |
 | S09 Vé thành công | | ✔ | ✔ (quầy) | | |
 | S10 Vé của tôi | | ✔ | | | |
 | S11 Tài khoản | | ✔ | ✔ | ✔ | ✔ |

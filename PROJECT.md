@@ -47,7 +47,7 @@ lib/
 | 7 | `hold_seats` Transaction | Atomic seat lock via Postgres RPC with row lock `FOR UPDATE` | M1 / M3 | Survey F7 |
 | 8 | Seat Hold Countdown Timer | 5-min timer with red warning under 60s and auto-expiry | M3 | Survey F8 |
 | 9 | Concession / Food Selection | Quantity stepper, availability check, skipped option | M3 | Survey F9 |
-| 10 | VNPay Sandbox Checkout | Edge function HMAC-SHA512 URL generation & WebView | M1 / M3 | Survey F10 |
+| 10 | SePay VietQR Checkout | Edge function VietQR generation & payment screen | M1 / M3 | Survey F10 |
 | 11 | `confirm_payment` RPC | Finalize booking, mark seats sold, queue food order | M1 / M3 | Survey F11 |
 | 12 | Electronic QR Ticket Generation | TicketCard with 8-char booking code and valid QR code | M3 | Survey F12 |
 | 13 | Tabbed Ticket Management | My Tickets S10 (SẮP TỚI, ĐÃ XEM, ĐÃ HỦY) | M5 | Survey F13 |
@@ -79,7 +79,7 @@ lib/
 |---|------|-------|-------------|--------|
 | M1 | Backend Completeness & Shared Core | Missing RPCs (`get_dashboard_metrics`, `cancel_showtime`), 15m gap trigger, seed data for test accounts, Edge function service-role fix, management & counter repositories/controllers | none | DONE |
 | M2 | Auth & Customer Discovery (S01–S04, S17, S17B, S30) | Screens S01 Login, S02 Register, S03 Home Discovery, S04 Movie Detail, S17 Cinema Map, S17B Cinema Detail, S30 Notifications | M1 | DONE |
-| M3 | Booking Flow & Checkout (S05–S09, S11, S11B) | Screens S05 Showtimes, S06 Seat Select (`hold_seats`), S07 Food Select, S08 Checkout, S08B VNPay WebView, S09 Ticket Success, S11 Profile, S11B Edit Profile | M1, M2 | DONE |
+| M3 | Booking Flow & Checkout (S05–S09, S11, S11B) | Screens S05 Showtimes, S06 Seat Select (`hold_seats`), S07 Food Select, S08 Checkout, S08B SePay Payment Screen, S09 Ticket Success, S11 Profile, S11B Edit Profile | M1, M2 | DONE |
 | M4 | Staff Operations (S18–S21, S23) | Screens S18 Ticket Check-in (scanner, 8 checks, T16/T18 ID check), S19 Food Delivery Board (`deliver_food`), S20 Counter Showtimes, S21 Counter Payment & Change, S23 Staff Management (`create-staff`) | M1, M3 | DONE |
 | M5 | Management & Admin Suite (S10, S10B, S12–S16, S22, S24–S29, S31) | Screens S10 My Tickets & S10B Ticket Detail (2h cancellation), S12 Management Menu, S13 Movies CRUD, S14 Showtimes (15m conflict check), S15 Bookings inspection, S16 Food catalog, S22 Dashboard metrics, S24 Room Seat Map designer, S25 Cinemas & Rooms, S26 Pricing, S27 Vouchers, S28 Managers, S29 Audit Logs, S31 Support Chat | M1, M3, M4 | DONE |
 | M6 | Final E2E Integration & Verification | Route wiring in `main.dart`, pass 100% of E2E test suite (Tiers 1-4), adversarial test hardening (Tier 5), `flutter analyze` 0 issues, `flutter test` 100% pass, Forensic Audit CLEAN | M1–M5, TEST_READY.md | DONE |
@@ -92,7 +92,7 @@ lib/
 
 ### Booking & Seats
 - `BookingRepository.holdSeats({showtimeId, bookingCode, seatIds, holdMinutes, bookingJson})`: calls RPC `hold_seats`
-- `BookingRepository.confirmPayment({bookingCode, txnRef, vnpTransactionNo, amount})`: calls RPC `confirm_payment`
+- `BookingRepository.confirmPayment({bookingCode, txnRef, transactionNo, amount})`: calls RPC `confirm_payment`
 - `BookingRepository.cancelBooking(bookingCode, reason)`: calls RPC `cancel_booking`
 - `SeatTakenException(conflictedSeatId)`: thrown when seats are contested
 

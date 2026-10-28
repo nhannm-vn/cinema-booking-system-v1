@@ -16,7 +16,7 @@
 | 7 | `hold_seats` Transaction | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S06-Hold |
 | 8 | Seat Hold Countdown Timer | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S07-Timer |
 | 9 | Concession / Food Selection | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S07-Food |
-| 10 | VNPay Sandbox Checkout | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S08-Checkout |
+| 10 | SePay VietQR Checkout | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S08-Checkout |
 | 11 | `confirm_payment` RPC | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S08-Confirm |
 | 12 | Electronic QR Ticket Generation | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S09-Ticket |
 | 13 | Tabbed Ticket Management | ORIGINAL_REQUEST R1 | 5 | 5 | ✓ | S10-Management |
@@ -62,7 +62,7 @@
 ## Real-World Application Scenarios (Tier 4)
 | # | Scenario | Features Exercised | Expected Outcome |
 |---|----------|--------------------|------------------|
-| 1 | Full Customer Online Booking Journey | F1, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 | Customer discovers movie, selects seats, holds via RPC, adds popcorn, completes VNPay checkout, receives QR ticket S09 |
+| 1 | Full Customer Online Booking Journey | F1, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 | Customer discovers movie, selects seats, holds via RPC, adds popcorn, completes SePay checkout, receives QR ticket S09 |
 | 2 | Ticket Cancellation & 2-Hour Cutoff | F1, F13, F14, F32 | Customer cancels ticket with >2h showtime, seats released to inventory, refund notification dispatched, audit log created |
 | 3 | Staff QR Check-in with Age Verification | F1, F15, F16, F17, F32 | Staff logs into S18, scans QR for T18 movie, checks ID verification box, confirms check-in, status changes to `used` |
 | 4 | Staff Food Delivery Queue | F1, F18, F19, F32 | Staff opens S19, views pending orders sorted by showtime, marks order delivered via RPC `deliver_food`, customer gets notification |

@@ -15,10 +15,10 @@
 | Database | **PostgreSQL** (có sẵn trong Supabase) | Dữ liệu quan hệ, transaction, khóa dòng | Giữ ghế cần khóa dòng, Postgres làm tốt hơn NoSQL |
 | Bảo mật dữ liệu | **Row Level Security (RLS)** | Phân quyền theo role và rạp ngay trong DB | Thay cho Firestore Rules, chặn lỗi cả khi client bị sửa |
 | Logic nghiệp vụ nhạy cảm | **Postgres functions (RPC)** | Giữ ghế, xác nhận thanh toán, hủy vé, soát vé | Chạy trong một transaction phía DB, client không tự ghi trạng thái |
-| Xử lý server nhẹ | **Supabase Edge Functions** (Deno/TypeScript) | Tạo URL VNPay, nhận IPN, tạo tài khoản nhân viên | Giữ được HashSecret và service key khỏi app |
+| Xử lý server nhẹ | **Supabase Edge Functions** (Deno/TypeScript) | Tạo thanh toán SePay VietQR, nhận Webhook SePay, tạo tài khoản nhân viên | Giữ được API Key/Token và service key khỏi app |
 | Realtime | **Supabase Realtime** | Sơ đồ ghế cập nhật trực tiếp | Có sẵn, không cần code socket |
 | Lưu file | **Supabase Storage** | Poster, backdrop, ảnh món ăn | Có sẵn, có CDN |
-| Thanh toán | **VNPay Sandbox** | Cổng thanh toán | Theo yêu cầu |
+| Thanh toán | **SePay (VietQR / Chuyển khoản ngân hàng tự động)** | Cổng thanh toán & Webhook | Tự động hóa thanh toán ngân hàng qua SePay |
 | Bản đồ | **google_maps_flutter**, **geolocator** | Tab Rạp | Theo thiết kế |
 | QR | **qr_flutter**, **mobile_scanner** | Vé điện tử, soát vé | Theo thiết kế |
 | Thông báo cục bộ | **flutter_local_notifications** | Nhắc suất chiếu | Theo thiết kế |
@@ -41,16 +41,16 @@
 │  Realtime    (bảng seats)                                           │
 │  Storage     (poster, backdrop, ảnh món)                            │
 │  Edge Functions:                                                    │
-│     • create-vnpay-url   (ký HMAC-SHA512, giữ HashSecret)           │
-│     • vnpay-return       (xác minh chữ ký, gọi confirm_payment)     │
+│     • create-sepay-url   (tạo mã VietQR & thông tin thanh toán)      │
+│     • sepay-webhook      (xác thực Webhook, gọi confirm_payment)    │
 │     • create-staff       (tạo user Auth bằng service role)          │
 └─────────────────────────────────────────────────────────────────────┘
                 ▲
-                │ redirect return URL / IPN
-           VNPay Sandbox (WebView trong app)
+                │ Webhook chuyển khoản ngân hàng / VietQR
+            SePay Gateway / Chuyển khoản VietQR 24/7
 ```
 
-**Điểm khác với bản Firebase:** logic giữ ghế và thanh toán chạy trong Postgres, không chạy trong app. App chỉ gọi hàm và nhận kết quả. Chữ ký VNPay và giá tiền được kiểm tra ở Edge Function, nên không bị lộ khóa như khi để trong client.
+**Điểm khác với bản Firebase:** logic giữ ghế và thanh toán chạy trong Postgres, không chạy trong app. App chỉ gọi hàm và nhận kết quả. Webhook SePay và giá tiền được kiểm tra ở Edge Function, nên không bị lộ khóa như khi để trong client.
 
 ---
 
@@ -66,8 +66,8 @@ supabase/
 │   ├── 0004_triggers.sql          # updated_at, đồng bộ profile
 │   └── 0005_seed.sql              # Dữ liệu mẫu (DATA.md mục 9)
 └── functions/
-    ├── create-vnpay-url/index.ts
-    ├── vnpay-return/index.ts
+    ├── create-sepay-url/index.ts
+    ├── sepay-webhook/index.ts
     └── create-staff/index.ts
 ```
 
@@ -87,7 +87,7 @@ Quy ước: tên bảng `snake_case` số nhiều. Khóa chính `uuid` (trừ m�
 | `showtimes` | `id uuid` | `movie_id`, `cinema_id`, `room_id`, `format`, `start_time`, `end_time`, `status`, `total_seats`, `sold_seats` |
 | `seats` | `(showtime_id, seat_id)` | `status` (`holding`/`sold`), `booking_code`, `hold_holder`, `hold_until`. Chỉ tồn tại khi giữ hoặc đã bán |
 | `bookings` | `code text` (8 ký tự) | Trạng thái, snapshot suất/phim/rạp, `price_snapshot jsonb`, `foods jsonb`, `seats jsonb` |
-| `payments` | `txn_ref text` | `booking_code`, `amount`, `status`, `response_code`, `vnp_transaction_no` |
+| `payments` | `txn_ref text` | `booking_code`, `amount`, `status`, `response_code`, `sepay_transaction_id` |
 | `notifications` | `id uuid` | `user_id`, `type`, `title`, `body`, `booking_code`, `is_read` |
 | `pricing_settings` | `id int = 1` | 1 dòng duy nhất: giá cơ sở, phụ thu, khung giờ vàng, ngày cuối tuần |
 | `vouchers` | `code text` | `type`, `value`, `expires_at`, `max_uses`, `used_count`, `is_active` (mức S) |
@@ -131,8 +131,8 @@ create table public.bookings (
   food_status   text not null default 'none' check (food_status in ('none','pending','delivered','cancelled')),
   food_delivered_by uuid, food_delivered_at timestamptz,
   price_snapshot jsonb not null,                   -- {ticket_total, food_total, discount, total}
-  payment_method text check (payment_method in ('vnpay','cash','card','demo')),
-  vnp_transaction_no text,
+  payment_method text check (payment_method in ('sepay','vnpay','cash','card','demo')),
+  sepay_transaction_id text,
   paid_at       timestamptz,
   checked_in_by uuid, checked_in_at timestamptz,
   cancel_reason text, cancelled_by uuid, cancelled_at timestamptz,
@@ -231,13 +231,13 @@ Lưu ý: không lưu `seats` vào bảng riêng cho booking. Danh sách ghế n�
 
 ### 5.2 Xác nhận thanh toán: `confirm_payment`
 
-Chỉ được gọi từ Edge Function `vnpay-return` **sau khi đã xác minh chữ ký**. Client không gọi trực tiếp.
+Chỉ được gọi từ Edge Function `sepay-webhook` **sau khi đã xác minh webhook và số tiền**. Client không gọi trực tiếp.
 
 ```sql
 create or replace function public.confirm_payment(
   p_booking_code text,
   p_txn_ref text,
-  p_vnp_transaction_no text,
+  p_sepay_transaction_id text,
   p_amount int
 ) returns void
 language plpgsql
@@ -269,13 +269,13 @@ begin
   where id = b.showtime_id;
 
   update public.bookings set
-    status = 'paid', hold_until = null, payment_method = 'vnpay',
-    vnp_transaction_no = p_vnp_transaction_no, paid_at = now(),
+    status = 'paid', hold_until = null, payment_method = 'sepay',
+    sepay_transaction_id = p_sepay_transaction_id, paid_at = now(),
     food_status = case when jsonb_array_length(b.foods) > 0 then 'pending' else 'none' end
   where code = b.code;
 
   update public.payments set status = 'success', response_code = '00',
-    vnp_transaction_no = p_vnp_transaction_no
+    sepay_transaction_id = p_sepay_transaction_id
   where txn_ref = p_txn_ref;
 
   insert into public.notifications (user_id, type, title, body, booking_code)
@@ -415,37 +415,32 @@ for each row execute function public.handle_new_user();
 
 ## 8. Edge Functions
 
-### 8.1 `create-vnpay-url`
+### 8.1 `create-sepay-url`
 - Nhận `booking_code`, `txn_ref`. Đọc `bookings.price_snapshot` từ DB, **không** nhận số tiền từ client.
-- Tạo tham số VNPay, sắp xếp key ASCII, ký HMAC-SHA512 bằng `VNPAY_HASH_SECRET` (secret của function).
-- Trả về URL thanh toán.
+- Tạo mã VietQR động qua SePay API hoặc định dạng VietQR chuẩn (`https://qr.sepay.vn/img?...`).
+- Trả về URL thanh toán SePay và thông tin chuyển khoản (ngân hàng, STK, nội dung).
 - Trước khi trả, ghi `payments` với `status = pending`.
 
-### 8.2 `vnpay-return`
-- VNPay redirect về đây (hoặc IPN). Xác minh `vnp_SecureHash` bằng cùng secret.
-- Kiểm tra `vnp_Amount` khớp `price_snapshot.total × 100`.
-- `vnp_ResponseCode == '00'` → gọi RPC `confirm_payment` bằng service role.
-- Trả về trang HTML ngắn hoặc redirect deep link để app đóng WebView.
+### 8.2 `sepay-webhook`
+- SePay gửi Webhook đến đây khi có biến động số dư tài khoản ngân hàng.
+- Xác thực header `Authorization: Apikey <SEPAY_API_KEY>` (hoặc so sánh secret token).
+- Tách `booking_code` / `txn_ref` từ nội dung chuyển khoản (`content`).
+- Kiểm tra `transferAmount >= price_snapshot.total`.
+- Gọi RPC `confirm_payment` bằng service role.
+- Trả về `{ success: true }` cho SePay.
 
 ### 8.3 `create-staff`
 - Chỉ Manager (của rạp) và Admin gọi được. Kiểm tra quyền bằng JWT trước khi tạo.
 - Tạo user Auth, cập nhật `profiles` với `role = 'staff'` và `cinema_id` theo người gọi.
 
-Ví dụ khung `create-vnpay-url`:
+Ví dụ khung `create-sepay-url`:
 
 ```ts
-// supabase/functions/create-vnpay-url/index.ts
+// supabase/functions/create-sepay-url/index.ts
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const secret = Deno.env.get('VNPAY_HASH_SECRET')!;
-
-async function hmacSha512(key: string, data: string): Promise<string> {
-  const enc = new TextEncoder();
-  const k = await crypto.subtle.importKey('raw', enc.encode(key),
-    { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', k, enc.encode(data));
-  return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
+const bank = Deno.env.get('SEPAY_BANK') || 'MBBank';
+const accountNo = Deno.env.get('SEPAY_ACCOUNT_NO') || '0000123456789';
 
 Deno.serve(async (req) => {
   const auth = req.headers.get('Authorization') ?? '';
@@ -454,33 +449,28 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: auth } } },
   );
-  const { booking_code, txn_ref, return_url, ip } = await req.json();
+  const { booking_code, txn_ref } = await req.json();
 
   const { data: booking, error } = await supabase
     .from('bookings').select('code, price_snapshot, movie_title')
     .eq('code', booking_code).single();
   if (error || !booking) return new Response('NOT_FOUND', { status: 404 });
 
-  const params: Record<string, string> = {
-    vnp_Version: '2.1.0', vnp_Command: 'pay',
-    vnp_TmnCode: Deno.env.get('VNPAY_TMN_CODE')!,
-    vnp_Amount: String(booking.price_snapshot.total * 100),
-    vnp_CurrCode: 'VND', vnp_TxnRef: txn_ref,
-    vnp_OrderInfo: `Thanh toan ${booking.code}`,
-    vnp_OrderType: 'other', vnp_Locale: 'vn',
-    vnp_ReturnUrl: return_url, vnp_IpAddr: ip,
-    vnp_CreateDate: new Date().toISOString().replace(/\D/g, '').slice(0, 14),
-  };
+  const totalAmount = booking.price_snapshot?.total ?? 0;
+  const qrUrl = `https://qr.sepay.vn/img?bank=${bank}&acc=${accountNo}&template=compact&amount=${totalAmount}&des=${booking.code}`;
 
-  const query = Object.keys(params).sort()
-    .map(k => `${k}=${encodeURIComponent(params[k]).replace(/%20/g, '+')}`).join('&');
-  const hash = await hmacSha512(secret, query);
-
-  return Response.json({ url: `${Deno.env.get('VNPAY_URL')}?${query}&vnp_SecureHash=${hash}` });
+  return Response.json({
+    url: qrUrl,
+    bank,
+    account_no: accountNo,
+    amount: totalAmount,
+    content: booking.code,
+    txn_ref,
+  });
 });
 ```
 
-> Khung trên chỉ để tham khảo. Trước khi dùng, đối chiếu với tài liệu VNPay sandbox về cách encode và thời hạn `vnp_ExpireDate`. Ghi chú này đúng với PROJECT.md mục 5.
+> SePay tự động bắt giao dịch ngân hàng theo nội dung chuyển khoản và gửi Webhook tới server.
 
 ---
 
@@ -540,7 +530,7 @@ dependencies:
   google_maps_flutter: ^2.6.0
   geolocator: ^11.0.0
 
-  # Thanh toán (WebView hiển thị VNPay)
+  # Thanh toán (SePay VietQR & WebView hiển thị cổng thanh toán)
   webview_flutter: ^4.7.0
 
   # Thông báo cục bộ
@@ -559,7 +549,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 ```
 
-Bỏ `firebase_core`, `firebase_auth`, `cloud_firestore`, `crypto` (ký VNPay đã chuyển sang Edge Function).
+Bỏ `firebase_core`, `firebase_auth`, `cloud_firestore`, `crypto` (xử lý thanh toán SePay đã chuyển sang Edge Function).
 
 ---
 
@@ -628,7 +618,7 @@ Bắt lỗi `SEAT_TAKEN:<ghế>` từ `PostgrestException.message` và ném `Sea
 | `DocumentSnapshot.data()` | `Map<String, dynamic>` từ `.select()` |
 | `FieldValue.serverTimestamp()` | `default now()` |
 | Mã booking làm doc ID | Cột `code` là primary key |
-| Ký VNPay trong `vnpay_hasher.dart` | Edge Function `create-vnpay-url` và `vnpay-return` |
+| Xử lý thanh toán | Edge Function `create-sepay-url` và `sepay-webhook` |
 
 ---
 
@@ -641,9 +631,9 @@ Bắt lỗi `SEAT_TAKEN:<ghế>` từ `PostgrestException.message` và ném `Sea
 5. Bật Realtime cho bảng `seats`.
 6. Đặt secret cho Edge Functions:
    ```bash
-   supabase secrets set VNPAY_HASH_SECRET=... VNPAY_TMN_CODE=... VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+   supabase secrets set SEPAY_API_KEY=... SEPAY_ACCOUNT_NO=... SEPAY_BANK=MBBank
    ```
-7. Deploy: `supabase functions deploy create-vnpay-url vnpay-return create-staff`.
+7. Deploy: `supabase functions deploy create-sepay-url sepay-webhook create-staff`.
 8. Tạo tài khoản admin đầu tiên trong Auth (Dashboard), rồi chạy seed để tạo các tài khoản còn lại qua `create-staff`.
 9. Chạy app: `flutter run --dart-define=...`.
 
@@ -652,7 +642,7 @@ Bắt lỗi `SEAT_TAKEN:<ghế>` từ `PostgrestException.message` và ném `Sea
 ## 15. Bảo mật — bắt buộc
 
 - [ ] Service role key chỉ có trong Edge Function, không có trong app và không commit.
-- [ ] `VNPAY_HASH_SECRET` chỉ nằm trong `supabase secrets`.
+- [ ] `SEPAY_API_KEY` chỉ nằm trong `supabase secrets`.
 - [ ] RLS bật ở mọi bảng. Kiểm tra bằng `select tablename, rowsecurity from pg_tables where schemaname='public';`.
 - [ ] Không có policy `for all using (true)` ở bảng nhạy cảm.
 - [ ] Thử bằng tài khoản khách: gọi trực tiếp `from('bookings').update(...)` phải bị từ chối.
@@ -664,7 +654,7 @@ Bắt lỗi `SEAT_TAKEN:<ghế>` từ `PostgrestException.message` và ném `Sea
 
 - Hai tài khoản cùng giữ một ghế gần như đồng thời: một người thành công, người kia nhận `SEAT_TAKEN`. Nhờ `for update` trên `showtimes`, các đặt cùng suất được xếp hàng.
 - Giữ ghế rồi chờ quá `hold_until`: ghế hiển thị trống.
-- Thanh toán với `vnp_Amount` khác `price_snapshot`: `confirm_payment` ném `AMOUNT_MISMATCH`.
+- Thanh toán với số tiền chuyển khoản khác `price_snapshot`: `confirm_payment` ném `AMOUNT_MISMATCH`.
 - Gọi `confirm_payment` trực tiếp từ app: bị từ chối (không có quyền, vì hàm chỉ cấp cho service role).
 
 ---
@@ -672,7 +662,7 @@ Bắt lỗi `SEAT_TAKEN:<ghế>` từ `PostgrestException.message` và ném `Sea
 ## 17. Giới hạn cần biết
 
 - `for update` trên `showtimes` làm các đặt cùng suất chạy tuần tự. Với một rạp vài trăm người/giờ thì không đáng kể. Nếu tải lớn hơn thì đổi sang khóa theo từng ghế.
-- VNPay Sandbox không có IPN đáng tin cho demo. Vẫn nên triển khai `vnpay-return` để app không phụ thuộc vào việc người dùng quay lại WebView.
+- SePay Webhook tự động nhận thông báo chuyển khoản ngân hàng 24/7 và xác nhận thanh toán tức thời qua Edge Function.
 - Supabase free tier có giới hạn số Edge Function calls và băng thông. Đủ cho demo đồ án.
 - Realtime có giới hạn số kết nối đồng thời theo gói. Demo không chạm tới giới hạn.
 

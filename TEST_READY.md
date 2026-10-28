@@ -38,7 +38,7 @@ The test suite follows a 4-tier testing hierarchy defined in the opaque-box test
 - **F01–F02 (Auth & Onboarding):** Email/Password login, customer registration, role mappings (`customer`, `staff`, `manager`, `admin`), locked state enforcement, route redirection contracts.
 - **F03–F05 (Movie & Showtime Browsing):** Release status computation (`isNowShowing`, `isUpcoming`), case-insensitive title search, date filter chips, 7-day schedule window, sold-out indicators.
 - **F06–F08 (Seat Selection & Realtime Hold):** 8-seat maximum per transaction, couple seat layout rules, `hold_seats` 5-min online vs 3-min counter durations, `HoldTimer` widget rendering, countdown styling (< 60s warning).
-- **F09–F11 (Food & VNPay Checkout):** Concession catalog stepper (0–99 bounds), VNPay `vnp_Amount` x100 calculation, `TxnRef` formatting, `confirm_payment` RPC transition from holding to paid, seat status to sold, price snapshot immutability.
+- **F09–F11 (Food & SePay Checkout):** Concession catalog stepper (0–99 bounds), SePay payment and VietQR generation, `TxnRef` formatting, `confirm_payment` RPC transition from holding to paid, seat status to sold, price snapshot immutability.
 - **F12–F14 (Ticket Lifecycle & Cancellation):** Electronic QR ticket formatting, tabbed ticket sorting (`SẮP TỚI`, `ĐÃ XEM`, `ĐÃ HỦY`), `isNoShow` condition (showtime + 15m), `cancel_booking` 2-hour cutoff constraint.
 - **F15–F17 (Staff QR Check-in):** 8-character uppercase booking code normalization, ResultSheet UI state transitions, 8-step check-in validation cascade, age verification mandatory checkbox for `T16`/`T18`.
 - **F18–F21 (Staff Concession & Box Office):** Concession fulfillment queue sorted by showtime ascending, `deliver_food` transition, counter box office sales (3-min hold), cash change calculator (`cashReceived - total`).
@@ -56,14 +56,14 @@ The test suite follows a 4-tier testing hierarchy defined in the opaque-box test
 - **PW1 (Format x Seat Type):** Full matrix of {2D, 3D, IMAX} x {Standard, VIP, Couple} verifying exact pricing formulas.
 - **PW2 (Time Slot x Surcharges):** Combinations of weekday vs weekend and prime vs non-prime time surcharges.
 - **PW3 (Voucher x Food):** Fixed amount vs percentage vouchers applied to ticket total only, leaving concession total untouched.
-- **PW4 (Channel x Payment x Hold Timeout):** Online (5m) vs Counter (3m), VNPay vs Cash vs Card, and timeout expirations.
+- **PW4 (Channel x Payment x Hold Timeout):** Online (5m) vs Counter (3m), SePay vs Cash vs Card, and timeout expirations.
 - **PW5 (Age Rating x Staff Check-in):** P/T13 (direct check-in) vs T16/T18 (mandatory ID verification checkbox).
 - **PW6 (Food Status x Booking Lifecycle):** Food queue transitions (`pending` -> `delivered`, booking cancellation cascade to food order).
 - **PW7 (User Role x Multi-Tenant Scoping):** Cross-branch check-in prevention (`WRONG_CINEMA`), manager cinema isolation, admin global visibility.
 - **PW8 (Account Locking x Role Redirection):** Immediate redirection to login when customer, staff, or manager accounts are locked.
 
 ### Tier 4: End-to-End Application Scenarios (10 tests)
-1. **Scenario 1: Full Customer Online Booking Journey** (S03 -> S04 -> S05 -> S06 hold -> S07 food -> S08 VNPay checkout -> S09 TicketCard).
+1. **Scenario 1: Full Customer Online Booking Journey** (S03 -> S04 -> S05 -> S06 hold -> S07 food -> S08 SePay checkout -> S09 TicketCard).
 2. **Scenario 2: Ticket Cancellation & 2-Hour Cutoff Rule** (>2h cancellation allowed with seats/food release; <2h rejected with `CANNOT_CANCEL_WITHIN_2_HOURS`).
 3. **Scenario 3: Staff QR Check-in with Age Verification & Duplicate Prevention** (T18 ID check contract, check-in to used state, duplicate check-in rejected with `ALREADY_CHECKED_IN`).
 4. **Scenario 4: Staff Food Delivery Queue & Customer Notification** (Queue sorted ascending by showtime, delivery trigger, customer notification dispatched).

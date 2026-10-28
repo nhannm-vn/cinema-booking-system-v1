@@ -342,7 +342,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                 const SizedBox(height: AppSpacing.xs),
                 _buildPriceRow(
                   'Phương thức',
-                  ticket.paymentMethod?.toUpperCase() ?? 'VNPAY SANDBOX',
+                  ticket.paymentMethod?.toUpperCase() ?? 'SEPAY VIETQR',
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 _buildPriceRow(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/routes/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -15,6 +16,7 @@ import '../../../../shared/widgets/skeleton_box.dart';
 import '../../data/cinema_model.dart';
 import '../../data/location_service.dart';
 import '../controllers/cinema_provider.dart';
+import '../widgets/maps_web_guard.dart';
 
 /// S17 Cinema Locator Screen.
 /// References: ROLE_FLOWS.md Section 1, DESIGN_TOKENS.md, m2_plan.md Section 2.5
@@ -86,6 +88,23 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
     _centerCinema(target);
   }
 
+  Future<void> _openDirections(CinemaModel cinema) async {
+    final url =
+        'https://www.google.com/maps/dir/?api=1&destination=${cinema.lat},${cinema.lng}';
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể mở bản đồ chỉ đường.'),
+          backgroundColor: AppColors.canvasElevated,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cinemaProvider = context.watch<CinemaProvider>();
@@ -97,7 +116,8 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
         position: LatLng(cinema.lat, cinema.lng),
         infoWindow: InfoWindow(
           title: cinema.name,
-          snippet: cinema.address,
+          snippet: '${cinema.address} • Nhấn để chỉ đường',
+          onTap: () => _openDirections(cinema),
         ),
         onTap: () {
           cinemaProvider.selectCinema(cinema);
@@ -130,23 +150,26 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
       bottomNavigationBar: const CustomerBottomNav(currentIndex: 1),
       body: Stack(
         children: [
-          // Google Map Background
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: cinemaProvider.selectedCinema != null
-                  ? LatLng(
-                      cinemaProvider.selectedCinema!.lat,
-                      cinemaProvider.selectedCinema!.lng,
-                    )
-                  : _defaultCenter,
-              zoom: 12,
-            ),
-            markers: markers,
-            onMapCreated: (controller) => _mapController = controller,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-          ),
+          // Google Map Background or Fallback Interactive Canvas
+          if (isGoogleMapsReady())
+            GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: cinemaProvider.selectedCinema != null
+                    ? LatLng(
+                        cinemaProvider.selectedCinema!.lat,
+                        cinemaProvider.selectedCinema!.lng,
+                      )
+                    : _defaultCenter,
+                zoom: 12,
+              ),
+              markers: markers,
+              onMapCreated: (controller) => _mapController = controller,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              zoomControlsEnabled: false,
+            )
+          else
+            _buildInteractiveMapCanvas(cinemas, cinemaProvider),
 
           // Draggable Bottom Sheet with Cinema List
           DraggableScrollableSheet(
@@ -320,6 +343,15 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
                               backgroundColor: AppColors.canvas,
                               textColor: AppColors.muted,
                             ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.directions_outlined,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
+                            tooltip: 'Chỉ đường',
+                            onPressed: () => _openDirections(cinema),
+                          ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xxxs),
@@ -341,4 +373,180 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
       },
     );
   }
+
+  Widget _buildInteractiveMapCanvas(
+    List<CinemaModel> cinemas,
+    CinemaProvider cinemaProvider,
+  ) {
+    final selected = cinemaProvider.selectedCinema;
+
+    return Container(
+      color: AppColors.canvas,
+      child: Stack(
+        children: [
+          // Background stylized map grid
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _MapGridPainter(),
+            ),
+          ),
+
+          // Header badge
+          Positioned(
+            top: AppSpacing.sm,
+            left: AppSpacing.xs,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxs,
+                vertical: AppSpacing.xxxs,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.canvasElevated,
+                borderRadius: AppRadius.fullRadius,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_on, size: 14, color: AppColors.primary),
+                  const SizedBox(width: AppSpacing.xxxs),
+                  Text(
+                    'TP. HỒ CHÍ MINH · ${cinemas.length} CỤM RẠP',
+                    style: AppTextStyles.captionUppercase.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Interactive pins for cinemas
+          ...cinemas.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final cinema = entry.value;
+            final isSelected = selected?.id == cinema.id;
+
+            final double topFraction = idx == 0 ? 0.22 : 0.38;
+            final double leftFraction = idx == 0 ? 0.32 : 0.62;
+
+            return Positioned(
+              top: MediaQuery.of(context).size.height * topFraction,
+              left: MediaQuery.of(context).size.width * leftFraction - 60,
+              child: GestureDetector(
+                onTap: () {
+                  cinemaProvider.selectCinema(cinema);
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xxs,
+                        vertical: AppSpacing.xxxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : AppColors.canvasElevated,
+                        borderRadius: AppRadius.xsRadius,
+                        border: Border.all(
+                          color: isSelected ? AppColors.ink : AppColors.hairline,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        cinema.name.toUpperCase(),
+                        style: AppTextStyles.captionUppercase.copyWith(
+                          color: AppColors.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Icon(
+                      Icons.location_on,
+                      size: isSelected ? 36 : 28,
+                      color: isSelected ? AppColors.primary : AppColors.muted,
+                    ),
+                    if (isSelected) ...[
+                      const SizedBox(height: AppSpacing.xxxs),
+                      InkWell(
+                        onTap: () => _openDirections(cinema),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xxs,
+                            vertical: AppSpacing.xxxs,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: AppColors.canvasElevated,
+                            borderRadius: AppRadius.xsRadius,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.directions_outlined,
+                                size: 14,
+                                color: AppColors.ink,
+                              ),
+                              const SizedBox(width: AppSpacing.xxxs),
+                              Text(
+                                'CHỈ ĐƯỜNG',
+                                style: AppTextStyles.captionUppercase.copyWith(
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+
+          }),
+        ],
+      ),
+    );
+  }
 }
+
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = AppColors.hairline
+      ..strokeWidth = 1.0;
+
+    const double step = 64.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final roadPaint = Paint()
+      ..color = AppColors.canvasElevated
+      ..strokeWidth = 16.0
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path()
+      ..moveTo(0, size.height * 0.35)
+      ..cubicTo(
+        size.width * 0.3,
+        size.height * 0.45,
+        size.width * 0.6,
+        size.height * 0.25,
+        size.width,
+        size.height * 0.5,
+      );
+    canvas.drawPath(path, roadPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

@@ -221,11 +221,12 @@ class ManagementMenuScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.canvasElevated,
-        borderRadius: AppRadius.zeroRadius,
         border: Border.all(color: AppColors.hairline, width: 1),
       ),
-      child: ListTile(
+      child: Material(
+        color: AppColors.canvasElevated,
+        borderRadius: AppRadius.zeroRadius,
+        child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.xs,
@@ -261,6 +262,7 @@ class ManagementMenuScreen extends StatelessWidget {
           Navigator.pushNamed(context, route);
         },
       ),
-    );
+    ),
+  );
   }
 }
