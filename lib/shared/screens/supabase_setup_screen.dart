@@ -73,9 +73,9 @@ class SupabaseSetupScreen extends StatelessWidget {
                 // Step 3 Card
                 _buildStepCard(
                   step: 'BƯỚC 3',
-                  title: 'ĐIỀN VÀO DỰ ÁN ĐỂ CHẠY',
+                  title: 'ĐIỀN VÀO FILE .ENV ĐỂ CHẠY',
                   content:
-                      'Cách 1 (Nhanh nhất): Mở file lib/core/config/supabase_config.dart và điền vào _directUrl và _directAnonKey.\n\nCách 2: Chạy lệnh terminal:\nflutter run --dart-define=SUPABASE_URL=YOUR_URL --dart-define=SUPABASE_ANON_KEY=YOUR_KEY',
+                      'Mở file .env ở thư mục gốc dự án và dán 2 giá trị:\nSUPABASE_URL=https://...\nSUPABASE_ANON_KEY=eyJ...\n\nSau đó bấm F5 trong VS Code hoặc chạy lệnh:\nflutter run --dart-define-from-file=.env',
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
