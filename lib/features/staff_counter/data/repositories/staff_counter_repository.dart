@@ -72,4 +72,48 @@ class StaffCounterRepository {
       'p_booking': booking,
     });
   }
+
+  /// Lấy danh sách trạng thái ghế (sold, holding) trực tiếp từ bảng seats trong DB.
+  Future<List<Map<String, dynamic>>> getShowtimeSeats(String showtimeId) async {
+    try {
+      final response = await _supabase
+          .from('seats')
+          .select('seat_id, status, hold_until')
+          .eq('showtime_id', showtimeId);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Lấy danh sách món ăn / bắp nước đang có sẵn từ bảng foods trong DB.
+  Future<List<Map<String, dynamic>>> getAvailableFoods(String cinemaId) async {
+    try {
+      final response = await _supabase
+          .from('foods')
+          .select()
+          .eq('cinema_id', cinemaId)
+          .eq('is_available', true)
+          .order('price', ascending: true);
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Lấy sơ đồ phòng chiếu (seat_layout) từ bảng rooms trong DB.
+  Future<List<String>> getRoomLayout(String roomId) async {
+    try {
+      final response = await _supabase
+          .from('rooms')
+          .select('seat_layout')
+          .eq('id', roomId)
+          .maybeSingle();
+      final layout = response?['seat_layout'];
+      if (layout is List) {
+        return layout.map((e) => e.toString()).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 }

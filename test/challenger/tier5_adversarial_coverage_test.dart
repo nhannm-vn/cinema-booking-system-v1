@@ -180,6 +180,15 @@ class MockAdversarialCounterRepo implements StaffCounterRepository {
     if (shouldThrowSale) throw Exception('Thanh toán thất bại');
     lastSoldCode = bookingCode;
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getShowtimeSeats(String showtimeId) async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableFoods(String cinemaId) async => [];
+
+  @override
+  Future<List<String>> getRoomLayout(String roomId) async => [];
 }
 
 class MockAdversarialTicketRepo implements TicketRepository {

@@ -30,6 +30,7 @@ class StaffCounterProvider extends ChangeNotifier {
   String? get bookingCode => _bookingCode;
   DateTime? get holdUntil => _holdUntil;
   int get receivedCash => _receivedCash;
+  StaffCounterRepository get repo => _repo;
 
   /// Tạo mã booking ngẫu nhiên 8 ký tự viết hoa.
   String _generateBookingCode() {
@@ -124,6 +125,8 @@ class StaffCounterProvider extends ChangeNotifier {
       _bookingCode = _generateBookingCode();
       final total = calculateTotal();
       final bookingPayload = {
+        'showtime_id': _selectedShowtime!.id,
+        'channel': 'counter',
         'cinema_id': _selectedShowtime!.cinemaId,
         'movie_title': _selectedShowtime!.movieTitle ?? '',
         'cinema_name': _selectedShowtime!.cinemaName ?? '',
@@ -165,6 +168,8 @@ class StaffCounterProvider extends ChangeNotifier {
     try {
       final total = calculateTotal();
       final bookingPayload = {
+        'showtime_id': _selectedShowtime!.id,
+        'channel': 'counter',
         'cinema_id': _selectedShowtime!.cinemaId,
         'movie_title': _selectedShowtime!.movieTitle ?? '',
         'cinema_name': _selectedShowtime!.cinemaName ?? '',
