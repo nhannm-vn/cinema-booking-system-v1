@@ -20,9 +20,12 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'paid':
       case 'success':
-      case 'active':
         bg = AppColors.success;
         label = 'ĐÃ THANH TOÁN';
+        break;
+      case 'active':
+        bg = AppColors.success;
+        label = 'ĐANG HOẠT ĐỘNG';
         break;
       case 'upcoming':
         bg = AppColors.info;

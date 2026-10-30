@@ -16,6 +16,8 @@ class ShowtimeModel {
   final String? movieTitle;
   final String? roomName;
   final String? cinemaName;
+  final String? ageRating;
+  final String? posterUrl;
 
   const ShowtimeModel({
     required this.id,
@@ -33,6 +35,8 @@ class ShowtimeModel {
     this.movieTitle,
     this.roomName,
     this.cinemaName,
+    this.ageRating,
+    this.posterUrl,
   });
 
   bool get isSoldOut => soldSeats >= totalSeats;
@@ -56,6 +60,8 @@ class ShowtimeModel {
       movieTitle: map['movie_title'] as String?,
       roomName: map['room_name'] as String?,
       cinemaName: map['cinema_name'] as String?,
+      ageRating: map['age_rating'] as String?,
+      posterUrl: map['poster_url'] as String?,
     );
   }
 
@@ -66,8 +72,8 @@ class ShowtimeModel {
       'cinema_id': cinemaId,
       'room_id': roomId,
       'format': format,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
       'status': status,
       'cancel_reason': cancelReason,
       'total_seats': totalSeats,
@@ -92,6 +98,8 @@ class ShowtimeModel {
     String? roomName,
     String? cinemaName,
     bool? isCancelled,
+    String? ageRating,
+    String? posterUrl,
   }) {
     return ShowtimeModel(
       id: id ?? this.id,
@@ -109,6 +117,8 @@ class ShowtimeModel {
       movieTitle: movieTitle ?? this.movieTitle,
       roomName: roomName ?? this.roomName,
       cinemaName: cinemaName ?? this.cinemaName,
+      ageRating: ageRating ?? this.ageRating,
+      posterUrl: posterUrl ?? this.posterUrl,
     );
   }
 }

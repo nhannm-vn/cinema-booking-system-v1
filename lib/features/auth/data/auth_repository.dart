@@ -26,7 +26,12 @@ class AuthRepository {
           .maybeSingle();
 
       if (data == null) return null;
-      return AppUser.fromMap(data, email: user.email);
+      final profile = AppUser.fromMap(data, email: user.email);
+      if (profile.isLocked) {
+        await signOut();
+        return null;
+      }
+      return profile;
     } catch (_) {
       return null;
     }

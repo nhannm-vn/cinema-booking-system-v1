@@ -156,6 +156,25 @@ void main() {
       expect(find.byType(DateChip), findsNWidgets(7));
     });
 
+    testWidgets('S05: ShowtimeSelectionScreen renders cinema title and 7-day chips when opened from cinema', (tester) async {
+      await tester.pumpWidget(
+        createScreenHarness(
+          child: const ShowtimeSelectionScreen(
+            cinemaId: 'cn_q1',
+            cinemaName: 'CGV Vincom Center Đồng Khởi',
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Title should be uppercase cinema name
+      expect(find.text('CGV VINCOM CENTER ĐỒNG KHỞI'), findsOneWidget);
+
+      // Verify 7 DateChip widgets are rendered
+      expect(find.byType(DateChip), findsNWidgets(7));
+    });
+
     testWidgets('S06: SeatSelectionScreen renders Curved Screen, SeatWidget matrix, and SeatLegend', (tester) async {
       final booking = BookingProvider();
       booking.setShowtime(testShowtime);

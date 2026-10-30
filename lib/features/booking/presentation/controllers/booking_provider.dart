@@ -259,7 +259,7 @@ class BookingProvider extends ChangeNotifier {
       'cinema_name': _selectedShowtime!.cinemaName ?? '',
       'room_name': _selectedShowtime!.roomName ?? '',
       'format': _selectedShowtime!.format,
-      'showtime_start': _selectedShowtime!.startTime.toIso8601String(),
+      'showtime_start': _selectedShowtime!.startTime.toUtc().toIso8601String(),
       'price_snapshot': generatePriceSnapshot(),
       'seats': _selectedSeatIds.map((id) => {
         'id': id,
@@ -308,7 +308,7 @@ class BookingProvider extends ChangeNotifier {
       'cinema_name': _selectedShowtime!.cinemaName ?? '',
       'room_name': _selectedShowtime!.roomName ?? '',
       'format': _selectedShowtime!.format,
-      'showtime_start': _selectedShowtime!.startTime.toIso8601String(),
+      'showtime_start': _selectedShowtime!.startTime.toUtc().toIso8601String(),
       'price_snapshot': generatePriceSnapshot(),
       'seats': _selectedSeatIds.map((id) => {
         'id': id,

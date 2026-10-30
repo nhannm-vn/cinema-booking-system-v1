@@ -19,6 +19,7 @@ declare
   v_now timestamptz := now();
   v_until timestamptz := now() + make_interval(mins => p_hold_minutes);
   v_seat text;
+  v_st_start timestamptz;
 begin
   if v_uid is null then
     raise exception 'NOT_AUTHENTICATED';
@@ -56,6 +57,12 @@ begin
   where s.booking_code = b.code and b.user_id = v_uid and b.status = 'expired'
     and s.status = 'holding';
 
+  -- Lấy start_time chính xác từ bảng showtimes
+  select s.start_time into v_st_start from public.showtimes s where s.id = p_showtime_id;
+  if v_st_start is null then
+    v_st_start := (p_booking->>'showtime_start')::timestamptz;
+  end if;
+
   -- Ghi booking trước để có khóa chính booking_code
   insert into public.bookings (
     code, user_id, channel, status, hold_until, food_status, price_snapshot,
@@ -77,24 +84,27 @@ begin
     p_booking->>'cinema_name',
     p_booking->>'room_name',
     p_booking->>'format',
-    (p_booking->>'showtime_start')::timestamptz,
+    v_st_start,
     coalesce(p_booking->'seats', '[]'::jsonb),
     coalesce(p_booking->'foods', '[]'::jsonb)
   )
   on conflict (code) do update set
     hold_until = excluded.hold_until,
+    food_status = excluded.food_status,
     price_snapshot = excluded.price_snapshot,
-    seats = excluded.seats,
-    foods = excluded.foods;
+    foods = excluded.foods,
+    seats = excluded.seats;
 
-  -- Ghi ghế sau (thỏa mãn foreign key seats_booking_code_fkey)
-  insert into public.seats (showtime_id, seat_id, status, booking_code, hold_holder, hold_until)
-  select p_showtime_id, unnest(p_seat_ids), 'holding', p_booking_code, v_uid, v_until
-  on conflict (showtime_id, seat_id) do update
-    set status = 'holding',
-        booking_code = excluded.booking_code,
-        hold_holder = excluded.hold_holder,
-        hold_until = excluded.hold_until;
+  -- Giữ các ghế mới
+  foreach v_seat in array p_seat_ids loop
+    insert into public.seats (showtime_id, seat_id, status, hold_until, hold_holder, booking_code)
+    values (p_showtime_id, v_seat, 'holding', v_until, v_uid, p_booking_code)
+    on conflict (showtime_id, seat_id) do update set
+      status = 'holding',
+      hold_until = excluded.hold_until,
+      hold_holder = excluded.hold_holder,
+      booking_code = excluded.booking_code;
+  end loop;
 
   return v_until;
 end $$;
@@ -200,6 +210,10 @@ declare
   v_role text;
   v_cid text;
   v_now timestamptz := now();
+  v_st_start timestamptz;
+  v_diff_utc_mins numeric;
+  v_diff_vn_mins numeric;
+  v_effective_mins numeric;
 begin
   select role, cinema_id into v_role, v_cid from public.profiles where id = v_uid;
   if v_role not in ('staff', 'manager', 'admin') then
@@ -216,18 +230,53 @@ begin
   end if;
 
   if b.status = 'used' then
-    return jsonb_build_object('success', false, 'error_code', 'ALREADY_USED', 'message', 'Vé đã sử dụng lúc ' || to_char(b.checked_in_at, 'HH24:MI'));
+    return jsonb_build_object(
+      'success', false,
+      'error_code', 'ALREADY_USED',
+      'message', 'Vé đã sử dụng lúc ' || to_char(b.checked_in_at at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI')
+    );
   end if;
 
   if v_role <> 'admin' and b.cinema_id <> v_cid then
     return jsonb_build_object('success', false, 'error_code', 'WRONG_CINEMA', 'message', 'Vé thuộc rạp khác (' || b.cinema_name || ')');
   end if;
 
-  if v_now < (b.showtime_start - interval '30 minutes') then
+  -- Lấy start_time chính xác từ bảng showtimes hoặc từ booking
+  select coalesce(s.start_time, b.showtime_start) into v_st_start
+  from public.bookings bk
+  left join public.showtimes s on s.id = bk.showtime_id
+  where bk.code = b.code;
+
+  if v_st_start is null then
+    v_st_start := b.showtime_start;
+  end if;
+
+  -- Tính khoảng cách thời gian theo cả 2 cách (tránh lệch timezone UTC vs GMT+7):
+  -- Cách 1: So sánh UTC chuẩn
+  v_diff_utc_mins := extract(epoch from (v_st_start - v_now)) / 60.0;
+  -- Cách 2: So sánh theo giờ địa phương Việt Nam (nếu dữ liệu bị lưu dạng wall-clock time mà không có offset)
+  v_diff_vn_mins := extract(epoch from (v_st_start::timestamp - (v_now at time zone 'Asia/Ho_Chi_Minh')::timestamp)) / 60.0;
+
+  -- Ưu tiên cách tính nào đưa thời gian vào khung cho phép soát vé (-15 phút đến 30 phút)
+  if v_diff_utc_mins >= -15 and v_diff_utc_mins <= 30 then
+    v_effective_mins := v_diff_utc_mins;
+  elsif v_diff_vn_mins >= -15 and v_diff_vn_mins <= 30 then
+    v_effective_mins := v_diff_vn_mins;
+  else
+    if abs(v_diff_utc_mins) < abs(v_diff_vn_mins) then
+      v_effective_mins := v_diff_utc_mins;
+    else
+      v_effective_mins := v_diff_vn_mins;
+    end if;
+  end if;
+
+  -- Kiểm tra: Chỉ vào trước tối đa 30 phút (v_effective_mins > 30 => quá sớm)
+  if v_effective_mins > 30 then
     return jsonb_build_object('success', false, 'error_code', 'TOO_EARLY', 'message', 'Chưa đến giờ vào rạp (Chỉ vào trước tối đa 30 phút)');
   end if;
 
-  if v_now > (b.showtime_start + interval '15 minutes') then
+  -- Kiểm tra: Quá 15 phút sau giờ chiếu (v_effective_mins < -15 => quá muộn)
+  if v_effective_mins < -15 then
     return jsonb_build_object('success', false, 'error_code', 'EXPIRED_SHOWTIME', 'message', 'Vé đã quá hạn sử dụng (Quá 15 phút sau giờ chiếu)');
   end if;
 
@@ -423,3 +472,75 @@ begin
     seats = excluded.seats,
     foods = excluded.foods;
 end $$;
+
+-- 12. toggle_user_lock: Khóa / mở khóa tài khoản nhân viên (an toàn theo role & cinema)
+create or replace function public.toggle_user_lock(
+  p_user_id uuid,
+  p_is_locked boolean
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_caller_id uuid := auth.uid();
+  v_caller_role text;
+  v_caller_cinema text;
+  v_target public.profiles%rowtype;
+begin
+  if v_caller_id is null then
+    raise exception 'NOT_AUTHENTICATED';
+  end if;
+
+  if v_caller_id = p_user_id then
+    raise exception 'CANNOT_LOCK_SELF';
+  end if;
+
+  select role, cinema_id into v_caller_role, v_caller_cinema
+  from public.profiles where id = v_caller_id;
+
+  select * into v_target from public.profiles where id = p_user_id for update;
+  if not found then
+    raise exception 'USER_NOT_FOUND';
+  end if;
+
+  -- Kiểm tra phân quyền:
+  -- Admin được khóa/mở khóa mọi người trừ bản thân
+  -- Manager chỉ được khóa/mở khóa nhân viên (staff) trong rạp của mình
+  if v_caller_role = 'admin' then
+    -- Hợp lệ
+  elsif v_caller_role = 'manager' then
+    if v_target.role <> 'staff' then
+      raise exception 'NOT_AUTHORIZED_ROLE';
+    end if;
+    if v_target.cinema_id is distinct from v_caller_cinema then
+      raise exception 'NOT_AUTHORIZED_CINEMA';
+    end if;
+  else
+    raise exception 'NOT_AUTHORIZED';
+  end if;
+
+  update public.profiles
+  set is_locked = p_is_locked,
+      updated_at = now()
+  where id = p_user_id;
+
+  insert into public.audit_logs (actor_id, actor_role, cinema_id, action, target_type, target_id, reason)
+  values (
+    v_caller_id,
+    v_caller_role,
+    v_target.cinema_id,
+    case when p_is_locked then 'lockUser' else 'unlockUser' end,
+    'profile',
+    p_user_id::text,
+    case when p_is_locked then 'Khóa tài khoản nhân viên' else 'Mở khóa tài khoản nhân viên' end
+  );
+
+  return jsonb_build_object(
+    'success', true,
+    'user_id', p_user_id,
+    'is_locked', p_is_locked
+  );
+end $$;
+
+grant execute on function public.toggle_user_lock(uuid, boolean) to authenticated;

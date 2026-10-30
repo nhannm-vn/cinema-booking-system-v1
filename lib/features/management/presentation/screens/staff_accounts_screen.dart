@@ -13,7 +13,6 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
-import '../../../../shared/widgets/status_badge.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/management_provider.dart';
 
@@ -29,6 +28,7 @@ class StaffAccountsScreen extends StatefulWidget {
 class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
   bool _initialized = false;
   String _activeCinemaId = 'cn_q1';
+  String _selectedRoleFilter = 'all';
 
   @override
   void didChangeDependencies() {
@@ -42,6 +42,8 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
           final isAdmin = user?.role == UserRole.admin;
           if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) {
             _activeCinemaId = user.cinemaId!;
+          } else if (isAdmin) {
+            _activeCinemaId = 'all';
           }
           final mgmt = context.read<ManagementProvider>();
           if (isAdmin) {
@@ -54,12 +56,16 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
   }
 
   void _showAddStaffModal(BuildContext context, String initialCinemaId) {
+    final mgmtInstance = context.read<ManagementProvider>();
+    final initialCinema = (initialCinemaId == 'all' || initialCinemaId.isEmpty)
+        ? (mgmtInstance.cinemas.firstOrNull?.id ?? 'cn_q1')
+        : initialCinemaId;
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     String selectedRole = 'staff';
-    String selectedCinemaId = initialCinemaId;
+    String selectedCinemaId = initialCinema;
 
     showModalBottomSheet<void>(
       context: context,
@@ -171,39 +177,58 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
 
-                        // Role selection
-                        Row(
-                          children: [
-                            Text(
-                              'VAI TRÒ: ',
-                              style: AppTextStyles.captionUppercase.copyWith(
-                                color: AppColors.muted,
-                                fontWeight: FontWeight.w700,
+                        // Role selection: Manager chỉ có quyền tạo nhân viên (STAFF)
+                        if (isAdmin) ...[
+                          Row(
+                            children: [
+                              Text(
+                                'VAI TRÒ: ',
+                                style: AppTextStyles.captionUppercase.copyWith(
+                                  color: AppColors.muted,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            ChoiceChip(
-                              label: Text('STAFF', style: AppTextStyles.captionUppercase),
-                              selected: selectedRole == 'staff',
-                              selectedColor: AppColors.primary,
-                              backgroundColor: AppColors.canvas,
-                              onSelected: (val) {
-                                if (val) setModalState(() => selectedRole = 'staff');
-                              },
-                            ),
-                            const SizedBox(width: AppSpacing.xxs),
-                            ChoiceChip(
-                              label: Text('MANAGER', style: AppTextStyles.captionUppercase),
-                              selected: selectedRole == 'manager',
-                              selectedColor: AppColors.primary,
-                              backgroundColor: AppColors.canvas,
-                              onSelected: (val) {
-                                if (val) setModalState(() => selectedRole = 'manager');
-                              },
-                            ),
-                          ],
-                        ),
-
+                              const SizedBox(width: AppSpacing.xs),
+                              ChoiceChip(
+                                label: Text('STAFF', style: AppTextStyles.captionUppercase),
+                                selected: selectedRole == 'staff',
+                                selectedColor: AppColors.primary,
+                                backgroundColor: AppColors.canvas,
+                                onSelected: (val) {
+                                  if (val) setModalState(() => selectedRole = 'staff');
+                                },
+                              ),
+                              const SizedBox(width: AppSpacing.xxs),
+                              ChoiceChip(
+                                label: Text('MANAGER', style: AppTextStyles.captionUppercase),
+                                selected: selectedRole == 'manager',
+                                selectedColor: AppColors.primary,
+                                backgroundColor: AppColors.canvas,
+                                onSelected: (val) {
+                                  if (val) setModalState(() => selectedRole = 'manager');
+                                },
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              Text(
+                                'VAI TRÒ: ',
+                                style: AppTextStyles.captionUppercase.copyWith(
+                                  color: AppColors.muted,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              const AppBadge(
+                                label: 'STAFF (NHÂN VIÊN)',
+                                backgroundColor: AppColors.primary,
+                                textColor: AppColors.ink,
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: AppSpacing.md),
 
                         AppButton.primary(
@@ -278,6 +303,26 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
     AppUser employee,
     String cinemaId,
   ) async {
+    final auth = context.read<AuthProvider>();
+    if (auth.currentUser?.id == employee.id) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.warning,
+          content: Text('BẠN KHÔNG THỂ TỰ KHÓA TÀI KHOẢN CỦA CHÍNH MÌNH'),
+        ),
+      );
+      return;
+    }
+    if (auth.currentUser?.role == UserRole.manager && employee.role == UserRole.manager) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.warning,
+          content: Text('QUẢN LÝ KHÔNG CÓ QUYỀN KHÓA TÀI KHOẢN QUẢN LÝ KHÁC'),
+        ),
+      );
+      return;
+    }
+
     final mgmt = context.read<ManagementProvider>();
     final willLock = !employee.isLocked;
     final actionLabel = willLock ? 'KHÓA' : 'MỞ KHÓA';
@@ -312,14 +357,23 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
     );
 
     if (confirmed == true && context.mounted) {
-      await mgmt.toggleUserLock(employee.id, willLock, cinemaId);
+      final success = await mgmt.toggleUserLock(employee.id, willLock, cinemaId);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.success,
-            content: Text('ĐÃ $actionLabel TÀI KHOẢN THÀNH CÔNG'),
-          ),
-        );
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.success,
+              content: Text('ĐÃ $actionLabel TÀI KHOẢN THÀNH CÔNG'),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.warning,
+              content: Text(mgmt.errorMessage ?? 'KHÔNG THỂ $actionLabel TÀI KHOẢN'),
+            ),
+          );
+        }
       }
     }
   }
@@ -330,7 +384,12 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
     final isAdmin = auth.currentUser?.role == UserRole.admin;
     final mgmt = context.watch<ManagementProvider>();
     final selectedCinema = mgmt.cinemas.where((c) => c.id == _activeCinemaId).firstOrNull;
-    final cinemaName = selectedCinema != null ? selectedCinema.name.toUpperCase() : _activeCinemaId.toUpperCase();
+    final String cinemaSubtitle;
+    if (isAdmin && _activeCinemaId == 'all') {
+      cinemaSubtitle = 'TẤT CẢ RẠP (QUẬN 1 & TÂN BÌNH)';
+    } else {
+      cinemaSubtitle = selectedCinema != null ? selectedCinema.name.toUpperCase() : _activeCinemaId.toUpperCase();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -342,14 +401,14 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'QUẢN LÝ NHÂN VIÊN',
+              isAdmin ? 'QUẢN LÝ NHÂN SỰ' : 'QUẢN LÝ NHÂN VIÊN',
               style: AppTextStyles.titleSm.copyWith(
                 color: AppColors.ink,
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              cinemaName,
+              cinemaSubtitle,
               style: AppTextStyles.caption.copyWith(color: AppColors.primary),
             ),
           ],
@@ -370,7 +429,7 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
       ),
       body: Column(
         children: [
-          if (isAdmin && mgmt.cinemas.isNotEmpty)
+          if (isAdmin && mgmt.cinemas.isNotEmpty) ...[
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
@@ -378,19 +437,18 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                 vertical: AppSpacing.xs,
               ),
               child: Row(
-                children: mgmt.cinemas.map((cinema) {
-                  final isSelected = _activeCinemaId == cinema.id;
-                  return Padding(
+                children: [
+                  Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text(
-                        cinema.name.toUpperCase(),
+                        'TẤT CẢ RẠP',
                         style: AppTextStyles.caption.copyWith(
-                          color: isSelected ? AppColors.ink : AppColors.muted,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: _activeCinemaId == 'all' ? AppColors.ink : AppColors.muted,
+                          fontWeight: _activeCinemaId == 'all' ? FontWeight.w700 : FontWeight.w500,
                         ),
                       ),
-                      selected: isSelected,
+                      selected: _activeCinemaId == 'all',
                       selectedColor: AppColors.primary,
                       backgroundColor: AppColors.canvasElevated,
                       shape: const RoundedRectangleBorder(
@@ -400,14 +458,109 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                       elevation: 0,
                       pressElevation: 0,
                       onSelected: (_) {
-                        setState(() => _activeCinemaId = cinema.id);
-                        mgmt.loadEmployees(cinema.id);
+                        setState(() => _activeCinemaId = 'all');
+                        mgmt.loadEmployees('all');
                       },
                     ),
-                  );
-                }).toList(),
+                  ),
+                  ...mgmt.cinemas.map((cinema) {
+                    final isSelected = _activeCinemaId == cinema.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: ChoiceChip(
+                        label: Text(
+                          cinema.name.toUpperCase(),
+                          style: AppTextStyles.caption.copyWith(
+                            color: isSelected ? AppColors.ink : AppColors.muted,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.canvasElevated,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.zeroRadius,
+                          side: BorderSide(color: AppColors.hairline),
+                        ),
+                        elevation: 0,
+                        pressElevation: 0,
+                        onSelected: (_) {
+                          setState(() => _activeCinemaId = cinema.id);
+                          mgmt.loadEmployees(cinema.id);
+                        },
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'VAI TRÒ: ',
+                    style: AppTextStyles.captionUppercase.copyWith(
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ChoiceChip(
+                    label: Text('TẤT CẢ', style: AppTextStyles.captionUppercase),
+                    selected: _selectedRoleFilter == 'all',
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.canvasElevated,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.zeroRadius,
+                      side: BorderSide(color: AppColors.hairline),
+                    ),
+                    elevation: 0,
+                    pressElevation: 0,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedRoleFilter = 'all');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xxs),
+                  ChoiceChip(
+                    label: Text('MANAGER', style: AppTextStyles.captionUppercase),
+                    selected: _selectedRoleFilter == 'manager',
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.canvasElevated,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.zeroRadius,
+                      side: BorderSide(color: AppColors.hairline),
+                    ),
+                    elevation: 0,
+                    pressElevation: 0,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedRoleFilter = 'manager');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xxs),
+                  ChoiceChip(
+                    label: Text('STAFF', style: AppTextStyles.captionUppercase),
+                    selected: _selectedRoleFilter == 'staff',
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.canvasElevated,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.zeroRadius,
+                      side: BorderSide(color: AppColors.hairline),
+                    ),
+                    elevation: 0,
+                    pressElevation: 0,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedRoleFilter = 'staff');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
           Expanded(child: _buildBody(context, mgmt, _activeCinemaId)),
         ],
       ),
@@ -423,7 +576,27 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
   }
 
   Widget _buildBody(BuildContext context, ManagementProvider mgmt, String cinemaId) {
-    if (mgmt.isLoading && mgmt.employees.isEmpty) {
+    final auth = context.watch<AuthProvider>();
+    final isManager = auth.currentUser?.role == UserRole.manager;
+
+    List<AppUser> displayEmployees;
+    if (isManager) {
+      // Manager chỉ quản lý nhân viên (staff) trong rạp của mình
+      displayEmployees = mgmt.employees
+          .where((e) => e.role == UserRole.staff && e.id != auth.currentUser?.id)
+          .toList();
+    } else {
+      // Admin quản lý cả Manager và Staff của các rạp
+      var list = mgmt.employees.where((e) => e.id != auth.currentUser?.id);
+      if (_selectedRoleFilter == 'manager') {
+        list = list.where((e) => e.role == UserRole.manager);
+      } else if (_selectedRoleFilter == 'staff') {
+        list = list.where((e) => e.role == UserRole.staff);
+      }
+      displayEmployees = list.toList();
+    }
+
+    if (mgmt.isLoading && displayEmployees.isEmpty) {
       return ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.xs),
         itemCount: 4,
@@ -435,7 +608,7 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
       );
     }
 
-    if (mgmt.errorMessage != null && mgmt.employees.isEmpty) {
+    if (mgmt.errorMessage != null && displayEmployees.isEmpty) {
       return Center(
         child: ErrorState(
           message: mgmt.errorMessage!,
@@ -444,13 +617,15 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
       );
     }
 
-    if (mgmt.employees.isEmpty) {
+    if (displayEmployees.isEmpty) {
       return Center(
         child: EmptyState(
-          title: 'CHƯA CÓ NHÂN VIÊN',
-          message: 'Rạp chưa có nhân viên nào. Nhấn THÊM NHÂN VIÊN để bắt đầu.',
+          title: isManager ? 'CHƯA CÓ NHÂN VIÊN' : 'CHƯA CÓ NHÂN SỰ',
+          message: isManager
+              ? 'Rạp chưa có nhân viên nào. Nhấn THÊM NHÂN VIÊN để bắt đầu.'
+              : 'Chưa có nhân sự nào phù hợp với bộ lọc. Nhấn THÊM để tạo mới.',
           icon: Icons.people_outline,
-          actionLabel: 'THÊM NHÂN VIÊN',
+          actionLabel: isManager ? 'THÊM NHÂN VIÊN' : 'THÊM NHÂN SỰ',
           onAction: () => _showAddStaffModal(context, cinemaId),
         ),
       );
@@ -458,16 +633,26 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
 
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.xs),
-      itemCount: mgmt.employees.length,
+      itemCount: displayEmployees.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
       itemBuilder: (context, index) {
-        final employee = mgmt.employees[index];
+        final employee = displayEmployees[index];
         return _buildEmployeeCard(context, employee, cinemaId);
       },
     );
   }
 
+  String _getCinemaName(ManagementProvider mgmt, String? cinemaId) {
+    if (cinemaId == null) return '';
+    final cinema = mgmt.cinemas.where((c) => c.id == cinemaId).firstOrNull;
+    return cinema != null ? cinema.name.toUpperCase() : cinemaId.toUpperCase();
+  }
+
   Widget _buildEmployeeCard(BuildContext context, AppUser employee, String cinemaId) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.currentUser?.role == UserRole.admin;
+    final mgmt = context.watch<ManagementProvider>();
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.canvasElevated,
@@ -482,7 +667,7 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
             backgroundColor: AppColors.canvas,
             radius: 20,
             child: Icon(
-              employee.isManager ? Icons.manage_accounts : Icons.person,
+              employee.role == UserRole.manager ? Icons.manage_accounts : Icons.person,
               color: AppColors.primary,
             ),
           ),
@@ -496,7 +681,7 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        employee.fullName.isNotEmpty ? employee.fullName : 'Nhân viên',
+                        employee.fullName.isNotEmpty ? employee.fullName : 'Nhân sự',
                         style: AppTextStyles.titleSm.copyWith(
                           color: AppColors.ink,
                           fontWeight: FontWeight.w700,
@@ -505,7 +690,11 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    AppBadge(label: employee.role.name.toUpperCase()),
+                    AppBadge(
+                      label: employee.role.name.toUpperCase(),
+                      backgroundColor: employee.role == UserRole.manager ? AppColors.info : AppColors.hairline,
+                      textColor: AppColors.ink,
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xxxs),
@@ -520,12 +709,24 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                     style: AppTextStyles.caption.copyWith(color: AppColors.muted),
                   ),
                 ],
+                if (isAdmin && employee.cinemaId != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'RẠP: ${_getCinemaName(mgmt, employee.cinemaId)}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.xs),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    StatusBadge(
-                      status: employee.isLocked ? 'cancelled' : 'active',
+                    AppBadge(
+                      label: employee.isLocked ? 'ĐÃ KHÓA' : 'ĐANG HOẠT ĐỘNG',
+                      backgroundColor: employee.isLocked ? AppColors.warning : AppColors.success,
+                      textColor: AppColors.ink,
                     ),
                     SizedBox(
                       height: 32,
