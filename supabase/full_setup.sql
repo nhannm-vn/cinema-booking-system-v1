@@ -466,12 +466,12 @@ begin
   ) values (
     p_booking_code,
     v_uid,
-    'online',
+    coalesce(p_booking->>'channel', 'online'),
     'holding',
     v_until,
     'none',
     p_booking->'price_snapshot',
-    (p_booking->>'showtime_id')::uuid,
+    coalesce((p_booking->>'showtime_id')::uuid, p_showtime_id),
     p_booking->>'cinema_id',
     p_booking->>'movie_title',
     p_booking->>'poster_url',
@@ -813,7 +813,17 @@ begin
     p_booking->>'poster_url', p_booking->>'age_rating', p_booking->>'cinema_name',
     p_booking->>'room_name', p_booking->>'format', (p_booking->>'showtime_start')::timestamptz,
     coalesce(p_booking->'seats', '[]'::jsonb), coalesce(p_booking->'foods', '[]'::jsonb)
-  );
+  )
+  on conflict (code) do update set
+    channel = 'counter',
+    sold_by = excluded.sold_by,
+    status = 'paid',
+    food_status = excluded.food_status,
+    price_snapshot = excluded.price_snapshot,
+    payment_method = excluded.payment_method,
+    paid_at = excluded.paid_at,
+    seats = excluded.seats,
+    foods = excluded.foods;
 end $$;
 -- 0004_triggers.sql
 -- Triggers for Cinema Booking App
