@@ -14,6 +14,7 @@ import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../booking/data/models/room_model.dart';
+import '../../../cinemas/data/cinema_model.dart';
 import '../controllers/management_provider.dart';
 
 /// Screen S25: Cinemas & Rooms Configuration with navigation to S24 Seat Map Designer.
@@ -46,6 +47,24 @@ class _CinemasRoomsScreenState extends State<CinemasRoomsScreen> {
     provider.loadRooms(_selectedCinemaId);
   }
 
+  void _openAddEditCinemaModal(BuildContext context, {CinemaModel? cinema}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.canvasElevated,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.zeroRadius),
+      builder: (_) => _CinemaFormSheet(
+        cinema: cinema,
+        onSaved: (savedId) {
+          setState(() => _selectedCinemaId = savedId);
+          final provider = context.read<ManagementProvider>();
+          provider.loadCinemas();
+          provider.loadRooms(savedId);
+        },
+      ),
+    );
+  }
+
   void _openAddEditRoomModal(BuildContext context, {RoomModel? room}) {
     showModalBottomSheet(
       context: context,
@@ -66,6 +85,8 @@ class _CinemasRoomsScreenState extends State<CinemasRoomsScreen> {
     final isAdmin = user?.role == UserRole.admin;
     final provider = context.watch<ManagementProvider>();
 
+    final selectedCinema = provider.cinemas.where((c) => c.id == _selectedCinemaId).firstOrNull;
+
     return Scaffold(
       backgroundColor: AppColors.canvas,
       appBar: AppBar(
@@ -76,19 +97,29 @@ class _CinemasRoomsScreenState extends State<CinemasRoomsScreen> {
           style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
         ),
         actions: [
+          if (isAdmin)
+            TextButton.icon(
+              onPressed: () => _openAddEditCinemaModal(context),
+              icon: const Icon(Icons.add_business_outlined, color: AppColors.primary, size: 18),
+              label: Text(
+                'THÊM RẠP'.toUpperCase(),
+                style: AppTextStyles.button.copyWith(color: AppColors.primary),
+              ),
+            ),
           TextButton.icon(
             onPressed: () => _openAddEditRoomModal(context),
-            icon: const Icon(Icons.add, color: AppColors.primary, size: 20),
+            icon: const Icon(Icons.add, color: AppColors.ink, size: 20),
             label: Text(
               'THÊM PHÒNG'.toUpperCase(),
-              style: AppTextStyles.button.copyWith(color: AppColors.primary),
+              style: AppTextStyles.button.copyWith(color: AppColors.ink),
             ),
           ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Cinema Selector Bar (if Admin)
+          // Cinema Selector Bar (if Admin or multiple cinemas)
           if (isAdmin) ...[
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -129,7 +160,92 @@ class _CinemasRoomsScreenState extends State<CinemasRoomsScreen> {
             ),
           ],
 
+          // Selected Cinema Info Card with Edit Option for Admin
+          if (selectedCinema != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.canvasElevated,
+                  borderRadius: AppRadius.zeroRadius,
+                  border: Border.all(color: AppColors.hairline),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.theater_comedy_outlined, color: AppColors.primary, size: 28),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  selectedCinema.name.toUpperCase(),
+                                  style: AppTextStyles.titleSm.copyWith(color: AppColors.ink, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              if (isAdmin)
+                                InkWell(
+                                  onTap: () => _openAddEditCinemaModal(context, cinema: selectedCinema),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(AppSpacing.xxs),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
+                                        const SizedBox(width: AppSpacing.xxxs),
+                                        Text(
+                                          'SỬA RẠP',
+                                          style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            selectedCinema.address,
+                            style: AppTextStyles.caption.copyWith(color: AppColors.body),
+                          ),
+                          if (selectedCinema.phone != null && selectedCinema.phone!.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.xxxs),
+                            Text(
+                              'Hotline: ${selectedCinema.phone} · Tọa độ: [${selectedCinema.lat}, ${selectedCinema.lng}]',
+                              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           const SizedBox(height: AppSpacing.xs),
+
+          // Header for Rooms Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xxs),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'DANH SÁCH PHÒNG CHIẾU (${provider.rooms.length})'.toUpperCase(),
+                  style: AppTextStyles.captionUppercase.copyWith(color: AppColors.muted, fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  'CHẠM PHÒNG ĐỂ THIẾT KẾ GHẾ',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
 
           // Rooms List
           Expanded(
@@ -441,6 +557,208 @@ class _RoomFormSheetState extends State<_RoomFormSheet> {
 
               AppButton.primary(
                 label: 'LƯU PHÒNG CHIẾU',
+                onPressed: _submit,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CinemaFormSheet extends StatefulWidget {
+  final CinemaModel? cinema;
+  final void Function(String savedId) onSaved;
+
+  const _CinemaFormSheet({
+    this.cinema,
+    required this.onSaved,
+  });
+
+  @override
+  State<_CinemaFormSheet> createState() => _CinemaFormSheetState();
+}
+
+class _CinemaFormSheetState extends State<_CinemaFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _idController;
+  late TextEditingController _nameController;
+  late TextEditingController _addressController;
+  late TextEditingController _phoneController;
+  late TextEditingController _hoursController;
+  late TextEditingController _latController;
+  late TextEditingController _lngController;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.cinema;
+    _idController = TextEditingController(text: c?.id ?? 'cn_${DateTime.now().millisecondsSinceEpoch % 10000}');
+    _nameController = TextEditingController(text: c?.name ?? '');
+    _addressController = TextEditingController(text: c?.address ?? '');
+    _phoneController = TextEditingController(text: c?.phone ?? '1900 6017');
+    _hoursController = TextEditingController(text: c?.openingHours ?? '08:00 - 23:30');
+    _latController = TextEditingController(text: c != null ? '${c.lat}' : '10.7769');
+    _lngController = TextEditingController(text: c != null ? '${c.lng}' : '106.7009');
+  }
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    _nameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _hoursController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final isEditing = widget.cinema != null;
+    final lat = double.tryParse(_latController.text.trim()) ?? 10.7769;
+    final lng = double.tryParse(_lngController.text.trim()) ?? 106.7009;
+    final id = _idController.text.trim();
+
+    final cinema = CinemaModel(
+      id: id,
+      name: _nameController.text.trim(),
+      address: _addressController.text.trim(),
+      phone: _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+      openingHours: _hoursController.text.trim().isNotEmpty ? _hoursController.text.trim() : null,
+      lat: lat,
+      lng: lng,
+      isActive: widget.cinema?.isActive ?? true,
+    );
+
+    final provider = context.read<ManagementProvider>();
+    final success = await provider.saveCinema(cinema, isEditing: isEditing);
+
+    if (mounted) {
+      if (success) {
+        Navigator.pop(context);
+        widget.onSaved(id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEditing ? 'Cập nhật cụm rạp thành công' : 'Thêm cụm rạp mới thành công'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.errorMessage ?? 'Lưu cụm rạp thất bại'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.cinema != null;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: AppSpacing.md,
+        right: AppSpacing.md,
+        top: AppSpacing.md,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.md,
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                (isEditing ? 'CHỈNH SỬA CỤM RẠP' : 'THÊM CỤM RẠP MỚI').toUpperCase(),
+                style: AppTextStyles.titleSm.copyWith(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              if (!isEditing) ...[
+                AppTextField(
+                  controller: _idController,
+                  label: 'MÃ RẠP (ID DUY NHẤT) *',
+                  hintText: 'VD: cn_binhthanh',
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc' : null,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+
+              AppTextField(
+                controller: _nameController,
+                label: 'TÊN CỤM RẠP *',
+                hintText: 'VD: Cinema Landmark 81',
+                validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc' : null,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              AppTextField(
+                controller: _addressController,
+                label: 'ĐỊA CHỈ CHI TIẾT *',
+                hintText: 'VD: 720A Điện Biên Phủ, P.22, Q.Bình Thạnh, TP.HCM',
+                validator: (val) => val == null || val.trim().isEmpty ? 'Bắt buộc' : null,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _phoneController,
+                      label: 'HOTLINE',
+                      hintText: '1900 6017',
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: AppTextField(
+                      controller: _hoursController,
+                      label: 'GIỜ MỞ CỬA',
+                      hintText: '08:00 - 23:30',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _latController,
+                      label: 'VĨ ĐỘ (LAT) *',
+                      hintText: '10.7769',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (val) => double.tryParse(val ?? '') == null ? 'Số thực' : null,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: AppTextField(
+                      controller: _lngController,
+                      label: 'KINH ĐỘ (LNG) *',
+                      hintText: '106.7009',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (val) => double.tryParse(val ?? '') == null ? 'Số thực' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              AppButton.primary(
+                label: 'LƯU THÔNG TIN RẠP',
                 onPressed: _submit,
               ),
             ],
