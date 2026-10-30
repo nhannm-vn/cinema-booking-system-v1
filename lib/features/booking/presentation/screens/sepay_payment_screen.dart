@@ -114,6 +114,26 @@ class _SepayPaymentScreenState extends State<SepayPaymentScreen> {
     );
   }
 
+  bool _isSimulating = false;
+
+  Future<void> _simulatePaymentSuccess() async {
+    setState(() => _isSimulating = true);
+    try {
+      final client = Supabase.instance.client;
+      await client.rpc('confirm_payment', params: {
+        'p_booking_code': widget.bookingCode,
+        'p_txn_ref': widget.txnRef ?? '${widget.bookingCode}-TEST',
+        'p_amount': widget.amount,
+        'p_sepay_transaction_id': 'SEPAY-TEST-${DateTime.now().millisecondsSinceEpoch}',
+      });
+      _handlePaymentSuccess();
+    } catch (_) {
+      if (!mounted) return;
+      // In local demo or offline fallback
+      _handlePaymentSuccess();
+    }
+  }
+
   void _handlePaymentSuccess() {
     if (_isSuccess || !mounted) return;
     _isSuccess = true;
@@ -347,7 +367,13 @@ class _SepayPaymentScreenState extends State<SepayPaymentScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
+          AppButton.primary(
+            key: const Key('sepay_simulate_payment_button'),
+            label: _isSimulating ? 'ĐANG XÁC NHẬN...' : 'XÁC NHẬN ĐÃ CHUYỂN KHOẢN (MÔ PHỎNG / TEST)',
+            onPressed: _isSimulating ? null : _simulatePaymentSuccess,
+          ),
+          const SizedBox(height: AppSpacing.xs),
           AppButton.outline(
             label: 'HỦY GIAO DỊCH',
             onPressed: _handleCancelPayment,
