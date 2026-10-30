@@ -24,11 +24,14 @@ class AuditLogsScreen extends StatefulWidget {
 
 class _AuditLogsScreenState extends State<AuditLogsScreen> {
   String _selectedAction = 'ALL';
+  String _selectedCinemaId = 'ALL';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<ManagementProvider>();
+      provider.loadCinemas();
       _loadLogs();
     });
   }
@@ -36,6 +39,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   void _loadLogs() {
     context.read<ManagementProvider>().loadAuditLogs(
       action: _selectedAction,
+      cinemaId: _selectedCinemaId == 'ALL' ? null : _selectedCinemaId,
     );
   }
 
@@ -65,6 +69,71 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       ),
       body: Column(
         children: [
+          // Cinema Filter Chips (ALL or specific Cinema)
+          if (provider.cinemas.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: Text(
+                      'TẤT CẢ RẠP',
+                      style: AppTextStyles.caption.copyWith(
+                        color: _selectedCinemaId == 'ALL' ? AppColors.ink : AppColors.muted,
+                        fontWeight: _selectedCinemaId == 'ALL' ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    selected: _selectedCinemaId == 'ALL',
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.canvasElevated,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.zeroRadius,
+                      side: BorderSide(color: AppColors.hairline),
+                    ),
+                    elevation: 0,
+                    pressElevation: 0,
+                    onSelected: (_) {
+                      setState(() => _selectedCinemaId = 'ALL');
+                      _loadLogs();
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ...provider.cinemas.map((cinema) {
+                    final isSelected = _selectedCinemaId == cinema.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: ChoiceChip(
+                        label: Text(
+                          cinema.name.toUpperCase(),
+                          style: AppTextStyles.caption.copyWith(
+                            color: isSelected ? AppColors.ink : AppColors.muted,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.canvasElevated,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.zeroRadius,
+                          side: BorderSide(color: AppColors.hairline),
+                        ),
+                        elevation: 0,
+                        pressElevation: 0,
+                        onSelected: (_) {
+                          setState(() => _selectedCinemaId = cinema.id);
+                          _loadLogs();
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
           // Action Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,

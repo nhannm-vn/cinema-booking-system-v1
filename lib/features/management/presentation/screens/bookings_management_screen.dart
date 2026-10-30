@@ -38,8 +38,15 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().currentUser;
-      if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) {
+      final isAdmin = user?.role == UserRole.admin;
+      if (isAdmin) {
+        _activeCinemaId = 'ALL';
+      } else if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) {
         _activeCinemaId = user.cinemaId!;
+      }
+      final provider = context.read<ManagementProvider>();
+      if (isAdmin) {
+        provider.loadCinemas();
       }
       _loadBookings();
     });
@@ -75,6 +82,16 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> {
     final user = context.watch<AuthProvider>().currentUser;
     final isAdmin = user?.role == UserRole.admin;
     final provider = context.watch<ManagementProvider>();
+    final selectedCinema = provider.cinemas.where((c) => c.id == _activeCinemaId).firstOrNull;
+
+    final String cinemaSubtitle;
+    if (_activeCinemaId == 'ALL') {
+      cinemaSubtitle = 'TOÀN HỆ THỐNG (TẤT CẢ RẠP)';
+    } else if (selectedCinema != null) {
+      cinemaSubtitle = selectedCinema.name.toUpperCase();
+    } else {
+      cinemaSubtitle = 'RẠP ${_activeCinemaId.toUpperCase()}';
+    }
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -90,7 +107,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> {
             ),
             const SizedBox(height: AppSpacing.xxxs),
             Text(
-              isAdmin ? 'RẠP ${_activeCinemaId.toUpperCase()} (ADMIN)' : 'RẠP ${_activeCinemaId.toUpperCase()}',
+              cinemaSubtitle,
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
@@ -101,6 +118,71 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> {
       ),
       body: Column(
         children: [
+          // Cinema Selector Bar (if Admin)
+          if (isAdmin)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: Text(
+                      'TẤT CẢ RẠP',
+                      style: AppTextStyles.caption.copyWith(
+                        color: _activeCinemaId == 'ALL' ? AppColors.ink : AppColors.muted,
+                        fontWeight: _activeCinemaId == 'ALL' ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                    selected: _activeCinemaId == 'ALL',
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.canvasElevated,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.zeroRadius,
+                      side: BorderSide(color: AppColors.hairline),
+                    ),
+                    elevation: 0,
+                    pressElevation: 0,
+                    onSelected: (_) {
+                      setState(() => _activeCinemaId = 'ALL');
+                      _loadBookings();
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  ...provider.cinemas.map((cinema) {
+                    final isSelected = _activeCinemaId == cinema.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.xs),
+                      child: ChoiceChip(
+                        label: Text(
+                          cinema.name.toUpperCase(),
+                          style: AppTextStyles.caption.copyWith(
+                            color: isSelected ? AppColors.ink : AppColors.muted,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.canvasElevated,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.zeroRadius,
+                          side: BorderSide(color: AppColors.hairline),
+                        ),
+                        elevation: 0,
+                        pressElevation: 0,
+                        onSelected: (_) {
+                          setState(() => _activeCinemaId = cinema.id);
+                          _loadBookings();
+                        },
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
           // Search Field
           Padding(
             padding: const EdgeInsets.symmetric(

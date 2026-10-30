@@ -28,6 +28,7 @@ class StaffAccountsScreen extends StatefulWidget {
 
 class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
   bool _initialized = false;
+  String _activeCinemaId = 'cn_q1';
 
   @override
   void didChangeDependencies() {
@@ -37,19 +38,28 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final auth = context.read<AuthProvider>();
-          final cinemaId = auth.currentUser?.cinemaId ?? 'cn_q1';
-          context.read<ManagementProvider>().loadEmployees(cinemaId);
+          final user = auth.currentUser;
+          final isAdmin = user?.role == UserRole.admin;
+          if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) {
+            _activeCinemaId = user.cinemaId!;
+          }
+          final mgmt = context.read<ManagementProvider>();
+          if (isAdmin) {
+            mgmt.loadCinemas();
+          }
+          mgmt.loadEmployees(_activeCinemaId);
         }
       });
     }
   }
 
-  void _showAddStaffModal(BuildContext context, String cinemaId) {
+  void _showAddStaffModal(BuildContext context, String initialCinemaId) {
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     String selectedRole = 'staff';
+    String selectedCinemaId = initialCinemaId;
 
     showModalBottomSheet<void>(
       context: context,
@@ -59,6 +69,8 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
         return StatefulBuilder(
           builder: (modalCtx, setModalState) {
             final mgmt = modalCtx.watch<ManagementProvider>();
+            final auth = modalCtx.watch<AuthProvider>();
+            final isAdmin = auth.currentUser?.role == UserRole.admin;
 
             return Padding(
               padding: EdgeInsets.only(
@@ -91,6 +103,38 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: AppSpacing.sm),
+
+                        if (isAdmin && mgmt.cinemas.isNotEmpty) ...[
+                          Text(
+                            'CHỌN RẠP CÔNG TÁC',
+                            style: AppTextStyles.captionUppercase.copyWith(
+                              color: AppColors.muted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: mgmt.cinemas.map((c) {
+                                final isSel = selectedCinemaId == c.id;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: AppSpacing.xs),
+                                  child: ChoiceChip(
+                                    label: Text(c.name.toUpperCase()),
+                                    selected: isSel,
+                                    selectedColor: AppColors.primary,
+                                    backgroundColor: AppColors.canvas,
+                                    onSelected: (val) {
+                                      if (val) setModalState(() => selectedCinemaId = c.id);
+                                    },
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                        ],
 
                         AppTextField(
                           key: const Key('add_staff_name_field'),
@@ -188,12 +232,12 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
                               fullName: name,
                               phone: phone,
                               role: selectedRole,
-                              cinemaId: cinemaId,
+                              cinemaId: selectedCinemaId,
                             );
 
                             if (ok && sheetContext.mounted) {
                               Navigator.pop(sheetContext);
-                              await mgmt.loadEmployees(cinemaId);
+                              await mgmt.loadEmployees(_activeCinemaId);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -283,9 +327,10 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final cinemaId = auth.currentUser?.cinemaId ?? 'cn_q1';
-    final cinemaName = cinemaId.toUpperCase();
+    final isAdmin = auth.currentUser?.role == UserRole.admin;
     final mgmt = context.watch<ManagementProvider>();
+    final selectedCinema = mgmt.cinemas.where((c) => c.id == _activeCinemaId).firstOrNull;
+    final cinemaName = selectedCinema != null ? selectedCinema.name.toUpperCase() : _activeCinemaId.toUpperCase();
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -314,7 +359,7 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
             key: const Key('add_staff_appbar_btn'),
             tooltip: 'Thêm nhân viên',
             icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
-            onPressed: () => _showAddStaffModal(context, cinemaId),
+            onPressed: () => _showAddStaffModal(context, _activeCinemaId),
           ),
           NotificationBadge(
             unreadCount: 0,
@@ -323,14 +368,56 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
           const SizedBox(width: AppSpacing.xxs),
         ],
       ),
-      body: _buildBody(context, mgmt, cinemaId),
+      body: Column(
+        children: [
+          if (isAdmin && mgmt.cinemas.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: mgmt.cinemas.map((cinema) {
+                  final isSelected = _activeCinemaId == cinema.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: ChoiceChip(
+                      label: Text(
+                        cinema.name.toUpperCase(),
+                        style: AppTextStyles.caption.copyWith(
+                          color: isSelected ? AppColors.ink : AppColors.muted,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.canvasElevated,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.zeroRadius,
+                        side: BorderSide(color: AppColors.hairline),
+                      ),
+                      elevation: 0,
+                      pressElevation: 0,
+                      onSelected: (_) {
+                        setState(() => _activeCinemaId = cinema.id);
+                        mgmt.loadEmployees(cinema.id);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          Expanded(child: _buildBody(context, mgmt, _activeCinemaId)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         key: const Key('add_staff_fab'),
         backgroundColor: AppColors.primary,
         elevation: 0,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: const Icon(Icons.add, color: AppColors.ink),
-        onPressed: () => _showAddStaffModal(context, cinemaId),
+        onPressed: () => _showAddStaffModal(context, _activeCinemaId),
       ),
     );
   }
