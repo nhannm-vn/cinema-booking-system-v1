@@ -225,41 +225,44 @@ class ManagementMenuScreen extends StatelessWidget {
         borderRadius: AppRadius.zeroRadius,
         border: Border.all(color: AppColors.hairline, width: 1),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        leading: Icon(icon, color: AppColors.primary, size: 24),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTextStyles.titleSm.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w600,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          leading: Icon(icon, color: AppColors.primary, size: 24),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: AppSpacing.xs),
-              badge,
+              if (badge != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                badge,
+              ],
             ],
-          ],
+          ),
+          subtitle: Text(
+            subtitle,
+            style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: AppColors.muted,
+          ),
+          onTap: () {
+            Navigator.pushNamed(context, route);
+          },
         ),
-        subtitle: Text(
-          subtitle,
-          style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 14,
-          color: AppColors.muted,
-        ),
-        onTap: () {
-          Navigator.pushNamed(context, route);
-        },
       ),
     );
   }

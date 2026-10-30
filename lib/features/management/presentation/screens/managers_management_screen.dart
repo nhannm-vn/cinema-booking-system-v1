@@ -124,7 +124,7 @@ class _ManagersManagementScreenState extends State<ManagersManagementScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               DropdownButtonFormField<String>(
-                value: newCinemaId,
+                initialValue: newCinemaId,
                 dropdownColor: AppColors.canvasElevated,
                 items: cinemas.map((c) => DropdownMenuItem(
                   value: c.id,

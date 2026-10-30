@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/routes/app_router.dart';
@@ -8,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/hold_timer.dart';
@@ -300,25 +300,13 @@ class _FoodSelectionScreenState extends State<FoodSelectionScreen> {
           child: Row(
             children: [
               // Food image or fallback
-              Container(
+              AppNetworkImage(
+                imageUrl: food.imageUrl,
                 width: 72,
                 height: 72,
-                color: AppColors.canvas,
-                child: food.imageUrl != null && food.imageUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: food.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => const Icon(
-                          Icons.fastfood,
-                          color: AppColors.muted,
-                          size: 32,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.fastfood,
-                        color: AppColors.muted,
-                        size: 32,
-                      ),
+                fit: BoxFit.cover,
+                fallbackIcon: Icons.fastfood,
+                iconSize: 32,
               ),
               const SizedBox(width: AppSpacing.xs),
 

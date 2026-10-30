@@ -429,19 +429,25 @@ class _PricingSettingsScreenState extends State<PricingSettingsScreen> {
           const SizedBox(height: AppSpacing.xs),
 
           // Switches
-          SwitchListTile(
-            title: const Text('Áp dụng suất Cuối tuần (T6–CN)', style: TextStyle(color: AppColors.ink)),
-            value: _simIsWeekend,
-            activeColor: AppColors.primary,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (val) => setState(() => _simIsWeekend = val),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              title: const Text('Áp dụng suất Cuối tuần (T6–CN)', style: TextStyle(color: AppColors.ink)),
+              value: _simIsWeekend,
+              activeThumbColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (val) => setState(() => _simIsWeekend = val),
+            ),
           ),
-          SwitchListTile(
-            title: const Text('Áp dụng khung Giờ vàng (18h–22h)', style: TextStyle(color: AppColors.ink)),
-            value: _simIsPrime,
-            activeColor: AppColors.primary,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (val) => setState(() => _simIsPrime = val),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              title: const Text('Áp dụng khung Giờ vàng (18h–22h)', style: TextStyle(color: AppColors.ink)),
+              value: _simIsPrime,
+              activeThumbColor: AppColors.primary,
+              contentPadding: EdgeInsets.zero,
+              onChanged: (val) => setState(() => _simIsPrime = val),
+            ),
           ),
 
           const Divider(color: AppColors.hairline, height: AppSpacing.md),

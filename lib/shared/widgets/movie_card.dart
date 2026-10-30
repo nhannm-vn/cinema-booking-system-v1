@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'app_badge.dart';
-import 'skeleton_box.dart';
+import 'app_network_image.dart';
 
 /// Movie Card component following DESIGN_TOKENS.md Section 7.3
 /// - Poster ratio: 2:3, Corner radius: 0
@@ -45,25 +44,12 @@ class MovieCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (posterUrl != null && posterUrl!.isNotEmpty)
-                  CachedNetworkImage(
-                    imageUrl: posterUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => const SkeletonBox(),
-                    errorWidget: (_, __, ___) => Container(
-                      color: AppColors.canvasElevated,
-                      child: const Center(
-                        child: Icon(Icons.movie_outlined, color: AppColors.muted, size: 36),
-                      ),
-                    ),
-                  )
-                else
-                  Container(
-                    color: AppColors.canvasElevated,
-                    child: const Center(
-                      child: Icon(Icons.movie_outlined, color: AppColors.muted, size: 36),
-                    ),
-                  ),
+                AppNetworkImage(
+                  imageUrl: posterUrl,
+                  fit: BoxFit.cover,
+                  fallbackIcon: Icons.movie_outlined,
+                  iconSize: 36,
+                ),
 
                 // Top-left Age Rating Badge
                 Positioned(

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -309,24 +310,13 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Food Image
-          ClipRRect(
-            borderRadius: AppRadius.zeroRadius,
-            child: Container(
-              width: 64,
-              height: 64,
-              color: AppColors.canvasElevated,
-              child: food.imageUrl != null && food.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      food.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.fastfood, color: AppColors.muted, size: 24),
-                      ),
-                    )
-                  : const Center(
-                      child: Icon(Icons.fastfood, color: AppColors.muted, size: 24),
-                    ),
-            ),
+          AppNetworkImage(
+            imageUrl: food.imageUrl,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            fallbackIcon: Icons.fastfood,
+            iconSize: 24,
           ),
           const SizedBox(width: AppSpacing.sm),
 
@@ -386,7 +376,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                     ),
                     Switch(
                       value: food.isAvailable,
-                      activeColor: AppColors.success,
+                      activeThumbColor: AppColors.success,
                       onChanged: (val) => provider.toggleFood(food.id, val),
                     ),
                     const Spacer(),
@@ -594,7 +584,7 @@ class _FoodFormSheetState extends State<_FoodFormSheet> {
                   style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
                 ),
                 value: _isAvailable,
-                activeColor: AppColors.success,
+                activeThumbColor: AppColors.success,
                 contentPadding: EdgeInsets.zero,
                 onChanged: (val) => setState(() => _isAvailable = val),
               ),

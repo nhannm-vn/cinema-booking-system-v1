@@ -1349,10 +1349,3 @@ begin
 end;
 $$;
 
--- Wrapper tương thích cho p_cinema_id dạng uuid
-create or replace function public.get_dashboard_metrics(
-  p_cinema_id uuid,
-  p_period text default 'today'
-) returns jsonb language sql as $$
-  select public.get_dashboard_metrics(p_cinema_id::text, p_period);
-$$;

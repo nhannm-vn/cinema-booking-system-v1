@@ -6,13 +6,18 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/customer_bottom_nav.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/manager_bottom_nav.dart';
 import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
+import '../../../../shared/widgets/staff_bottom_nav.dart';
 import '../../../../shared/widgets/status_badge.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../booking/data/models/booking_model.dart';
 import '../controllers/ticket_provider.dart';
 
@@ -46,6 +51,8 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
     final ticketProvider = context.watch<TicketProvider>();
 
     return Scaffold(
@@ -103,7 +110,11 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
           ),
         ],
       ),
-      bottomNavigationBar: const CustomerBottomNav(currentIndex: 2),
+      bottomNavigationBar: user?.role == UserRole.manager || user?.role == UserRole.admin
+          ? const ManagerBottomNav(currentIndex: 0)
+          : (user?.role == UserRole.staff
+              ? const StaffBottomNav(currentIndex: 0)
+              : const CustomerBottomNav(currentIndex: 2)),
     );
   }
 
@@ -188,24 +199,13 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Movie Poster Thumbnail
-            ClipRRect(
-              borderRadius: AppRadius.zeroRadius,
-              child: Container(
-                width: 72,
-                height: 104,
-                color: AppColors.canvasElevated,
-                child: ticket.posterUrl != null && ticket.posterUrl!.isNotEmpty
-                    ? Image.network(
-                        ticket.posterUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.movie, color: AppColors.muted, size: 28),
-                        ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.movie, color: AppColors.muted, size: 28),
-                      ),
-              ),
+            AppNetworkImage(
+              imageUrl: ticket.posterUrl,
+              width: 72,
+              height: 104,
+              fit: BoxFit.cover,
+              fallbackIcon: Icons.movie,
+              iconSize: 28,
             ),
             const SizedBox(width: AppSpacing.sm),
 
