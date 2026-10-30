@@ -89,8 +89,9 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
   }
 
   Future<void> _openDirections(CinemaModel cinema) async {
+    final destination = Uri.encodeComponent('${cinema.name}, ${cinema.address}');
     final url =
-        'https://www.google.com/maps/dir/?api=1&destination=${cinema.lat},${cinema.lng}';
+        'https://www.google.com/maps/dir/?api=1&destination=$destination';
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -422,13 +423,13 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
           ),
 
           // Interactive pins for cinemas
-          ...cinemas.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final cinema = entry.value;
+          ...cinemas.map((cinema) {
             final isSelected = selected?.id == cinema.id;
 
-            final double topFraction = idx == 0 ? 0.22 : 0.38;
-            final double leftFraction = idx == 0 ? 0.32 : 0.62;
+            // Real-world geographic layout (Tan Binh NW -> top-left, District 1 SE -> center-right)
+            final bool isQ1 = cinema.id == 'cn_q1';
+            final double topFraction = isQ1 ? 0.36 : 0.20;
+            final double leftFraction = isQ1 ? 0.62 : 0.30;
 
             return Positioned(
               top: MediaQuery.of(context).size.height * topFraction,

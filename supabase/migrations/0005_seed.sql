@@ -16,9 +16,16 @@ insert into public.pricing_settings (
 -- 2. Cinemas
 insert into public.cinemas (id, name, address, phone, lat, lng, opening_hours, is_active)
 values
-  ('cn_q1', 'Cinema Star Quận 1', '123 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM', '028 3822 1234', 10.7725, 106.6980, '08:00 - 23:30', true),
-  ('cn_tb', 'Cinema Star Tân Bình', '456 Hoàng Văn Thụ, Phường 4, Quận Tân Bình, TP.HCM', '028 3844 5678', 10.7981, 106.6534, '08:30 - 23:00', true)
-on conflict (id) do nothing;
+  ('cn_q1', 'CGV Vincom Center Đồng Khởi', 'Tầng 3, TTTM Vincom Center, 72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, TP.HCM', '1900 6017', 10.77810, 106.70220, '08:00 - 23:30', true),
+  ('cn_tb', 'Lotte Cinema Cộng Hòa (Pico Plaza)', 'Tầng 4, Pico Plaza, 20 Cộng Hòa, Phường 12, Quận Tân Bình, TP.HCM', '028 3844 5678', 10.80155, 106.65225, '08:30 - 23:00', true)
+on conflict (id) do update set
+  name = excluded.name,
+  address = excluded.address,
+  phone = excluded.phone,
+  lat = excluded.lat,
+  lng = excluded.lng,
+  opening_hours = excluded.opening_hours,
+  is_active = excluded.is_active;
 
 -- 3. Rooms
 insert into public.rooms (id, cinema_id, name, formats, rows, cols, seat_layout, seat_count)
