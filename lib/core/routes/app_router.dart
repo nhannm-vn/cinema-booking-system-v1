@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../features/auth/presentation/controllers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/booking/presentation/screens/checkout_screen.dart';
@@ -39,12 +41,16 @@ import '../../features/management/presentation/screens/showtimes_management_scre
 import '../../features/management/presentation/screens/vouchers_management_screen.dart';
 import '../../features/tickets/presentation/screens/my_tickets_screen.dart';
 import '../../features/tickets/presentation/screens/ticket_detail_screen.dart';
+import '../../shared/models/app_user.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Named route definitions for all screens S01 to S31.
 /// References: ROLE_FLOWS.md Section 6 & PROJECT_STRUCTURE.md
 abstract final class AppRoutes {
+  // Root / Entry
+  static const String root = '/';
+
   // Auth
   static const String login = '/login'; // S01
   static const String register = '/register'; // S02
@@ -95,6 +101,14 @@ abstract final class AppRoutes {
 abstract final class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      // Root / Web entry fallback
+      case AppRoutes.root:
+      case '':
+        return MaterialPageRoute(
+          builder: (_) => const _RootDispatcherScreen(),
+          settings: settings,
+        );
+
       // S01 Login
       case AppRoutes.login:
         String? redirectRoute;
@@ -529,5 +543,35 @@ abstract final class AppRouter {
         ),
       ),
     );
+  }
+}
+
+/// Dynamic root dispatcher ensuring web entry ('/') or cold reloads seamlessly
+/// route to the proper role dashboard without black screen placeholder.
+class _RootDispatcherScreen extends StatelessWidget {
+  const _RootDispatcherScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    if (auth.status == AuthStatus.loading || auth.status == AuthStatus.initial) {
+      return const Scaffold(
+        backgroundColor: AppColors.canvas,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    final user = auth.currentUser;
+    if (user != null && (user.role == UserRole.manager || user.role == UserRole.admin)) {
+      return const OperationalDashboardScreen();
+    }
+    if (user != null && user.role == UserRole.staff) {
+      return const TicketCheckinScreen();
+    }
+
+    return const HomeScreen();
   }
 }

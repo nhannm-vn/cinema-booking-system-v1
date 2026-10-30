@@ -8,6 +8,7 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -358,24 +359,13 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Food Image
-          ClipRRect(
-            borderRadius: AppRadius.zeroRadius,
-            child: Container(
-              width: 64,
-              height: 64,
-              color: AppColors.canvasElevated,
-              child: food.imageUrl != null && food.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      food.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.fastfood, color: AppColors.muted, size: 24),
-                      ),
-                    )
-                  : const Center(
-                      child: Icon(Icons.fastfood, color: AppColors.muted, size: 24),
-                    ),
-            ),
+          AppNetworkImage(
+            imageUrl: food.imageUrl,
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            fallbackIcon: Icons.fastfood,
+            iconSize: 24,
           ),
           const SizedBox(width: AppSpacing.sm),
 

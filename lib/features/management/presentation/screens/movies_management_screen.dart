@@ -8,6 +8,7 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -316,24 +317,13 @@ class _MoviesManagementScreenState extends State<MoviesManagementScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Poster
-          ClipRRect(
-            borderRadius: AppRadius.zeroRadius,
-            child: Container(
-              width: 64,
-              height: 96,
-              color: AppColors.canvasElevated,
-              child: (movie.posterUrl != null && movie.posterUrl!.isNotEmpty)
-                  ? Image.network(
-                      movie.posterUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Icon(Icons.movie, color: AppColors.muted, size: 24),
-                      ),
-                    )
-                  : const Center(
-                      child: Icon(Icons.movie, color: AppColors.muted, size: 24),
-                    ),
-            ),
+          AppNetworkImage(
+            imageUrl: movie.posterUrl,
+            width: 64,
+            height: 96,
+            fit: BoxFit.cover,
+            fallbackIcon: Icons.movie,
+            iconSize: 24,
           ),
           const SizedBox(width: AppSpacing.sm),
 

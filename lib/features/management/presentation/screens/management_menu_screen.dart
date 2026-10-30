@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/routes/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/app_user.dart';
@@ -224,45 +223,44 @@ class ManagementMenuScreen extends StatelessWidget {
         border: Border.all(color: AppColors.hairline, width: 1),
       ),
       child: Material(
-        color: AppColors.canvasElevated,
-        borderRadius: AppRadius.zeroRadius,
+        color: Colors.transparent,
         child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        leading: Icon(icon, color: AppColors.primary, size: 24),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTextStyles.titleSm.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w600,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          leading: Icon(icon, color: AppColors.primary, size: 24),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTextStyles.titleSm.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: AppSpacing.xs),
-              badge,
+              if (badge != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                badge,
+              ],
             ],
-          ],
+          ),
+          subtitle: Text(
+            subtitle,
+            style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+          ),
+          trailing: const Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: AppColors.muted,
+          ),
+          onTap: () {
+            Navigator.pushNamed(context, route);
+          },
         ),
-        subtitle: Text(
-          subtitle,
-          style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 14,
-          color: AppColors.muted,
-        ),
-        onTap: () {
-          Navigator.pushNamed(context, route);
-        },
       ),
-    ),
-  );
+    );
   }
 }

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/routes/app_router.dart';
@@ -8,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/customer_bottom_nav.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -398,33 +398,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 fit: StackFit.expand,
                 children: [
                   // Full-width Image
-                  if (imageUrl != null && imageUrl.isNotEmpty)
-                    CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => const SkeletonBox(),
-                      errorWidget: (_, __, ___) => Container(
-                        color: AppColors.canvasElevated,
-                        child: const Center(
-                          child: Icon(
-                            Icons.movie_outlined,
-                            color: AppColors.muted,
-                            size: 48,
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      color: AppColors.canvasElevated,
-                      child: const Center(
-                        child: Icon(
-                          Icons.movie_outlined,
-                          color: AppColors.muted,
-                          size: 48,
-                        ),
-                      ),
-                    ),
+                  AppNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    fallbackIcon: Icons.movie_outlined,
+                    iconSize: 48,
+                  ),
 
                   // Bottom Gradient Fade to canvas
                   Positioned.fill(

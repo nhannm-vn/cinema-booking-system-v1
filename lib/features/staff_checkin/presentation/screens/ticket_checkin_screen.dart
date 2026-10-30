@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/notification_badge.dart';
@@ -205,7 +206,9 @@ class _TicketCheckinScreenState extends State<TicketCheckinScreen> {
         ],
       ),
       body: _isDesktop ? _buildDesktopFallback(context) : _buildCameraScanner(context),
-      bottomNavigationBar: const StaffBottomNav(currentIndex: 0),
+      bottomNavigationBar: auth.currentUser?.role == UserRole.manager || auth.currentUser?.role == UserRole.admin
+          ? null
+          : const StaffBottomNav(currentIndex: 0),
     );
   }
 
