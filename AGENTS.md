@@ -14,7 +14,7 @@ Agent **BẮT BUỘC PHẢI ĐỌC VÀ ĐỐI CHIẾU** các tài liệu trong t
 2. [docs/TECH_STACK.md](file:///d:/cinema_booking_v1/docs/TECH_STACK.md) — **Bộ công nghệ chuẩn (Supabase + PostgreSQL + RLS + RPC + Edge Functions)**. Khi xung đột công nghệ với file khác, file này **LUÔN THẮNG**.
 3. [docs/DESIGN_TOKENS.md](file:///d:/cinema_booking_v1/docs/DESIGN_TOKENS.md) — Bảng màu, typography, khoảng cách, bo góc, component chuẩn.
 4. [docs/PROJECT_STRUCTURE.md](file:///d:/cinema_booking_v1/docs/PROJECT_STRUCTURE.md) — Kiến trúc Feature-first, tech stack, pubspec, đặt tên, phân tầng.
-5. [docs/BUSINESS_RULES.md](file:///d:/cinema_booking_v1/docs/BUSINESS_RULES.md) — Nghiệp vụ: giữ ghế, giá vé snapshot, VNPay sandbox, soát vé, hủy vé, đồ ăn, constants.
+5. [docs/BUSINESS_RULES.md](file:///d:/cinema_booking_v1/docs/BUSINESS_RULES.md) — Nghiệp vụ: giữ ghế, giá vé snapshot, SePay VietQR sandbox, soát vé, hủy vé, đồ ăn, constants.
 6. [docs/ROLE_FLOWS.md](file:///d:/cinema_booking_v1/docs/ROLE_FLOWS.md) — Luồng chi tiết từng role (Guest, Customer, Staff, Manager, Admin) và ma trận màn hình S01–S31.
 7. [docs/00_README.md](file:///d:/cinema_booking_v1/docs/00_README.md) — Thứ tự triển khai và quy tắc vàng khi vibe coding.
 
@@ -60,7 +60,7 @@ Trước khi ghi code, Agent phải xác định rõ:
 1. **CẤM** dùng Firebase. Toàn bộ backend chạy trên **Supabase + PostgreSQL** theo [TECH_STACK.md](file:///d:/cinema_booking_v1/docs/TECH_STACK.md).
 2. **CẤM** dùng Riverpod, Bloc, GetX hay bất kỳ state management nào ngoài `provider` (`ChangeNotifier`, `ProxyProvider`).
 3. **CẤM** hardcode giá trị style trong file UI. Mọi màu sắc, text style, padding, border radius phải lấy từ `AppColors`, `AppTextStyles`, `AppSpacing`, `AppRadius`.
-4. **CẤM** đưa `service_role_key` của Supabase hoặc `VNPAY_HASH_SECRET` vào code app client Flutter. Khóa bí mật chỉ nằm trong Supabase Edge Functions. App client chỉ dùng `anonKey`.
+4. **CẤM** đưa `service_role_key` của Supabase hoặc `SEPAY_API_KEY` vào code app client Flutter. Khóa bí mật chỉ nằm trong Supabase Edge Functions. App client chỉ dùng `anonKey`.
 5. **CẤM** khách hàng ghi trực tiếp vào bảng `bookings`, `seats`, `payments`. Mọi ghi dữ liệu nhạy cảm phải thông qua Postgres RPC.
 6. **CẤM** tính lại giá từ bảng giá hiện tại cho vé cũ; luôn sử dụng `price_snapshot` được lưu tại thời điểm tạo booking.
 7. **CẤM** tự ý thêm package bên ngoài danh sách đã định nghĩa trong [TECH_STACK.md mục 11](file:///d:/cinema_booking_v1/docs/TECH_STACK.md#L511-L565).

@@ -8,7 +8,7 @@
 ## 1. Mô tả dự án
 
 Ứng dụng đặt vé xem phim cho một chuỗi rạp, gồm hai mặt:
-- **Khách hàng:** xem phim, chọn rạp, chọn suất, chọn ghế, mua đồ ăn, thanh toán qua VNPay, nhận vé điện tử QR, quản lý vé, nhận thông báo.
+- **Khách hàng:** xem phim, chọn rạp, chọn suất, chọn ghế, mua đồ ăn, thanh toán qua SePay (VietQR), nhận vé điện tử QR, quản lý vé, nhận thông báo.
 - **Vận hành:** nhân viên soát vé tại cửa, giao đồ ăn, bán vé tại quầy. Quản lý và admin quản lý suất chiếu, phim, nhân viên, bảng giá, voucher, báo cáo.
 
 Phạm vi chia hai mức:
@@ -128,19 +128,20 @@ Hiển thị ở client (tính khi đọc, không lưu):
 - `holding` quá `holdUntil` → `expired`.
 - `paid` quá **15 phút** sau giờ chiếu mà chưa soát vé → `noShow`.
 
-### 6.2 Luồng thanh toán VNPay
+### 6.2 Luồng thanh toán SePay (VietQR / Chuyển khoản ngân hàng tự động)
 1. Kiểm tra booking còn `holding` và chưa quá `hold_until`.
 2. Tạo dòng trong bảng `payments` với `status = pending`, `txn_ref = ${bookingCode}-${yyMMddHHmmss}`.
-3. App gọi Supabase Edge Function `create-vnpay-url` gửi `booking_code` và `txn_ref`:
+3. App gọi Supabase Edge Function `create-sepay-url` gửi `booking_code` và `txn_ref`:
    - Edge Function đọc `bookings.price_snapshot` trực tiếp từ DB (không nhận tiền từ client).
-   - Tạo các tham số chuẩn VNPay (`vnp_Amount = price_snapshot.total × 100`, `vnp_TxnRef`, v.v.).
-   - Sắp xếp key ASCII, ký HMAC-SHA512 bằng `VNPAY_HASH_SECRET` an toàn ở server và trả về URL thanh toán.
-4. Mở `webview_flutter` với URL được trả về.
-5. Khi thanh toán xong, WebView redirect về `vnpay-return` (Edge Function):
-   - Edge Function xác minh chữ ký `vnp_SecureHash` và số tiền khớp `price_snapshot.total × 100`.
-   - Nếu `vnp_ResponseCode == "00"`: Edge Function gọi RPC `confirm_payment` bằng service role: booking `paid`, ghế `sold`, tăng `sold_seats`, `food_status = pending` nếu có món ăn, cập nhật `payments.status = success`, tạo notification và điều hướng S09.
-6. Mã khác hoặc người dùng thoát: đóng WebView, giữ booking `holding`, hiển thị lỗi, cho phép thử lại với `txn_ref` mới nếu còn thời gian giữ ghế.
-7. Hết giờ giữ ghế khi đang ở WebView: đóng WebView, về S06, booking `expired`.
+   - Tạo mã VietQR động chuẩn SePay (`https://qr.sepay.vn/img?...`) và thông tin chuyển khoản gồm: ngân hàng, số tài khoản, số tiền và nội dung chuyển khoản chứa `booking_code`.
+   - Trả về dữ liệu thanh toán VietQR / SePay checkout URL cho app client.
+4. Mở màn hình thanh toán SePay (hoặc WebView thanh toán) hiển thị mã QR VietQR, thông tin chuyển khoản và nút sao chép nhanh số tài khoản/nội dung.
+5. Khi khách hàng chuyển khoản qua ứng dụng ngân hàng:
+   - SePay tự động phát hiện giao dịch khớp nội dung và số tiền, gửi Webhook đến Supabase Edge Function `sepay-webhook`.
+   - Edge Function xác thực API Key SePay (`SEPAY_API_KEY`), kiểm tra số tiền `transferAmount >= price_snapshot.total`.
+   - Edge Function gọi RPC `confirm_payment` bằng service role: booking chuyển sang `paid`, ghế `sold`, tăng `sold_seats`, `food_status = pending` nếu có món ăn, cập nhật `payments.status = success`, tạo notification và điều hướng S09.
+6. Người dùng hủy hoặc có sự cố: giữ booking `holding`, hiển thị lỗi, cho phép thử lại nếu còn thời gian giữ ghế.
+7. Hết giờ giữ ghế khi đang ở màn hình thanh toán: đóng thanh toán, về S06, booking `expired`.
 
 ### 6.3 Thanh toán tại quầy (S21)
 - Không tạo doc `payments`. Ghi `paymentMethod` (`cash` hoặc `card`) và `paidAt` trên booking.
@@ -315,7 +316,7 @@ Booking:  holding ──thanh toán OK──► paid ──soát vé──► us
 
 ## 19. Giới hạn kỹ thuật và phương án kiến trúc
 - Logic nhạy cảm (giữ ghế, thanh toán, hủy vé) chạy an toàn bằng Postgres RPC functions phía DB.
-- Chữ ký bí mật `VNPAY_HASH_SECRET` và Supabase Service Role Key được bảo vệ tuyệt đối trong Supabase Edge Functions.
+- Secret Key `SEPAY_API_KEY` và Supabase Service Role Key được bảo vệ tuyệt đối trong Supabase Edge Functions.
 - Sơ đồ ghế cập nhật thời gian thực bằng Supabase Realtime lắng nghe bảng `seats`.
 - Hủy suất được thực hiện qua RPC `cancel_showtime` chạy trọn vẹn trong một transaction PostgreSQL.
 
@@ -326,7 +327,7 @@ Booking:  holding ──thanh toán OK──► paid ──soát vé──► us
 - [ ] Giá đọc từ bảng `pricing_settings`, không hardcode. Snapshot vào `price_snapshot` khi tạo booking.
 - [ ] Ghế đổi trạng thái qua RPC `hold_seats` (khóa dòng `for update` trên bảng `showtimes`).
 - [ ] Mọi query của Staff và Manager có `.eq('cinema_id', currentCinemaId)` (và được RLS bảo vệ kép).
-- [ ] Thanh toán VNPay tạo URL và xác minh chữ ký qua Edge Function, gọi RPC `confirm_payment`.
+- [ ] Thanh toán SePay tạo mã VietQR và xác thực qua Webhook Edge Function, gọi RPC `confirm_payment`.
 - [ ] Thông báo lỗi dùng đúng câu trong mục 8 và mục 5.
 - [ ] Hủy vé kiểm tra ≥ 2 giờ trước giờ chiếu qua RPC `cancel_booking`.
 - [ ] Soát vé kiểm tra đủ 6 điều kiện theo thứ tự mục 8 qua RPC `check_in`.

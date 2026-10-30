@@ -21,12 +21,16 @@ class BookingModel {
   final String foodStatus; // 'none', 'pending', 'delivered', 'cancelled'
   final Map<String, dynamic> priceSnapshot; // {ticket_total, food_total, discount, total}
   final String? paymentMethod;
+  final String? sepayTransactionId;
   final String? vnpTransactionNo;
   final DateTime? paidAt;
   final String? checkedInBy;
   final DateTime? checkedInAt;
   final String? cancelReason;
   final DateTime createdAt;
+
+  /// General transaction identifier (SePay / VietQR)
+  String? get transactionNo => sepayTransactionId ?? vnpTransactionNo;
 
   const BookingModel({
     required this.code,
@@ -49,6 +53,7 @@ class BookingModel {
     this.foodStatus = 'none',
     required this.priceSnapshot,
     this.paymentMethod,
+    this.sepayTransactionId,
     this.vnpTransactionNo,
     this.paidAt,
     this.checkedInBy,
@@ -110,7 +115,8 @@ class BookingModel {
       foodStatus: (map['food_status'] as String?) ?? 'none',
       priceSnapshot: Map<String, dynamic>.from(map['price_snapshot'] ?? {}),
       paymentMethod: map['payment_method'] as String?,
-      vnpTransactionNo: map['vnp_transaction_no'] as String?,
+      sepayTransactionId: (map['sepay_transaction_id'] ?? map['vnp_transaction_no']) as String?,
+      vnpTransactionNo: (map['vnp_transaction_no'] ?? map['sepay_transaction_id']) as String?,
       paidAt: map['paid_at'] != null ? DateTime.parse(map['paid_at'] as String).toLocal() : null,
       checkedInBy: map['checked_in_by'] as String?,
       checkedInAt: map['checked_in_at'] != null ? DateTime.parse(map['checked_in_at'] as String).toLocal() : null,
@@ -141,7 +147,8 @@ class BookingModel {
       'food_status': foodStatus,
       'price_snapshot': priceSnapshot,
       'payment_method': paymentMethod,
-      'vnp_transaction_no': vnpTransactionNo,
+      'sepay_transaction_id': sepayTransactionId ?? vnpTransactionNo,
+      'vnp_transaction_no': vnpTransactionNo ?? sepayTransactionId,
       'paid_at': paidAt?.toIso8601String(),
       'checked_in_by': checkedInBy,
       'checked_in_at': checkedInAt?.toIso8601String(),
@@ -171,6 +178,7 @@ class BookingModel {
     String? foodStatus,
     Map<String, dynamic>? priceSnapshot,
     String? paymentMethod,
+    String? sepayTransactionId,
     String? vnpTransactionNo,
     DateTime? paidAt,
     String? checkedInBy,
@@ -199,6 +207,7 @@ class BookingModel {
       foodStatus: foodStatus ?? this.foodStatus,
       priceSnapshot: priceSnapshot ?? this.priceSnapshot,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      sepayTransactionId: sepayTransactionId ?? this.sepayTransactionId,
       vnpTransactionNo: vnpTransactionNo ?? this.vnpTransactionNo,
       paidAt: paidAt ?? this.paidAt,
       checkedInBy: checkedInBy ?? this.checkedInBy,

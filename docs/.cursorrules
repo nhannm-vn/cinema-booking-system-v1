@@ -1,6 +1,6 @@
 # .cursorrules — Cinema Booking App (Flutter / Dart / Supabase + PostgreSQL)
 
-Bạn là kỹ sư Flutter/Dart cấp cao, am hiểu Supabase, PostgreSQL (RLS, RPC functions), Supabase Edge Functions và thanh toán VNPay Sandbox.
+Bạn là kỹ sư Flutter/Dart cấp cao, am hiểu Supabase, PostgreSQL (RLS, RPC functions), Supabase Edge Functions và thanh toán SePay (VietQR).
 Bạn đang xây dựng ứng dụng Cinema Booking & Operation Management. Tuân thủ tuyệt đối các luật sau.
 
 ## 0. RÀNG BUỘC BẮT BUỘC: ĐỌC TÀI LIỆU TRƯỚC KHI CODE
@@ -8,7 +8,7 @@ Trước khi tạo hoặc sửa bất kỳ file nào, Agent BẮT BUỘC PHẢI 
 1. `docs/TECH_STACK.md` (bộ công nghệ chuẩn: Supabase + PostgreSQL, RLS, RPC, Edge Functions — luôn thắng về công nghệ)
 2. `docs/DESIGN_TOKENS.md` (bảng màu, typography, khoảng cách, bo góc, component chuẩn)
 3. `docs/PROJECT_STRUCTURE.md` (cấu trúc thư mục Feature-first, pubspec, quy ước đặt tên, bảo mật)
-4. `docs/BUSINESS_RULES.md` (nghiệp vụ: giữ ghế, giá vé snapshot, VNPay, soát vé, đồ ăn, hủy vé, constants)
+4. `docs/BUSINESS_RULES.md` (nghiệp vụ: giữ ghế, giá vé snapshot, SePay VietQR, soát vé, đồ ăn, hủy vé, constants)
 5. `docs/ROLE_FLOWS.md` (luồng chi tiết từng role: Guest, Customer, Staff, Manager, Admin)
 6. `docs/00_README.md` (quy tắc vàng vibe coding)
 
@@ -19,7 +19,7 @@ Nếu yêu cầu của người dùng mâu thuẫn với tài liệu, DỪNG VÀ
 - State Management: `provider` (`ChangeNotifier`, `ProxyProvider`). Không dùng Riverpod, Bloc, GetX.
 - Backend: **Supabase** (Auth, PostgreSQL, Realtime, Storage, Edge Functions). Không dùng Firebase.
 - Database & Logic nhạy cảm: PostgreSQL với Row Level Security (RLS) và Postgres RPC functions (`hold_seats`, `confirm_payment`, `cancel_booking`, `check_in`, `deliver_food`).
-- Thanh toán: VNPay Sandbox qua `webview_flutter`. URL thanh toán và xác minh chữ ký HMAC-SHA512 thực hiện hoàn toàn tại Supabase Edge Functions (`create-vnpay-url`, `vnpay-return`). Tuyệt đối không để `VNPAY_HASH_SECRET` trong app client.
+- Thanh toán: SePay (chuyển khoản VietQR tự động) và cổng thanh toán SePay PG. Tạo mã QR thanh toán và xử lý webhook xác thực qua Supabase Edge Functions (`create-sepay-url`, `sepay-webhook`). Tuyệt đối không để `SEPAY_API_KEY` trong app client.
 - QR: `mobile_scanner` (quét), `qr_flutter` (hiển thị).
 - Bản đồ: `google_maps_flutter`, `geolocator`, `url_launcher`.
 - Thông báo cục bộ: `flutter_local_notifications`.

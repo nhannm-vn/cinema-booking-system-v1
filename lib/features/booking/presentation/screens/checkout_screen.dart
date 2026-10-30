@@ -81,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     await booking.syncBookingDetails();
   }
 
-  Future<void> _handleVNPayCheckout(BookingProvider booking) async {
+  Future<void> _handleSepayCheckout(BookingProvider booking) async {
     if (booking.currentBookingCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,7 +102,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       final txnRef = '${booking.currentBookingCode}-${DateTime.now().millisecondsSinceEpoch}';
-      final url = await _paymentRepo.createVNPayUrl(
+      final paymentData = await _paymentRepo.createSepayPayment(
         bookingCode: booking.currentBookingCode!,
         txnRef: txnRef,
       );
@@ -114,11 +114,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       Navigator.pushNamed(
         context,
-        AppRoutes.vnpayWebview,
+        AppRoutes.sepayPayment,
         arguments: {
-          'paymentUrl': url,
+          'paymentUrl': paymentData['url'] ?? paymentData['qr_url'] ?? '',
           'bookingCode': booking.currentBookingCode!,
           'txnRef': txnRef,
+          'bank': paymentData['bank'] ?? 'MBBank',
+          'accountNo': paymentData['account_no'] ?? '0000123456789',
+          'accountName': paymentData['account_name'] ?? 'CINEMA BOOKING SYSTEM',
+          'amount': booking.calculateGrandTotal(),
         },
       );
     } catch (e) {
@@ -131,7 +135,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         SnackBar(
           backgroundColor: AppColors.warning,
           content: Text(
-            (_paymentError ?? 'Lỗi khởi tạo cổng thanh toán.').toUpperCase(),
+            (_paymentError ?? 'Lỗi khởi tạo cổng thanh toán SePay.').toUpperCase(),
             style: AppTextStyles.bodySm.copyWith(color: AppColors.ink),
           ),
         ),
@@ -343,7 +347,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
 
-                // 4. Payment Method Selection (VNPay Sandbox)
+                // 4. Payment Method Selection (SePay VietQR)
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
@@ -361,7 +365,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           borderRadius: AppRadius.zeroRadius,
                         ),
                         child: const Center(
-                          child: Icon(Icons.payment, color: AppColors.onPrimary, size: 20),
+                          child: Icon(Icons.qr_code_2, color: AppColors.onPrimary, size: 20),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
@@ -370,12 +374,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'VNPAY SANDBOX (TEST CỔNG THANH TOÁN)',
+                              'SEPAY (CHUYỂN KHOẢN NGÂN HÀNG VIETQR)',
                               style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
                             ),
                             const SizedBox(height: AppSpacing.xxxs),
                             Text(
-                              'Thẻ ATM nội địa / QR Pay / Thẻ quốc tế',
+                              'Quét mã VietQR bằng app ngân hàng · Tự động duyệt vé tức thì',
                               style: AppTextStyles.bodySm.copyWith(color: AppColors.muted),
                             ),
                           ],
@@ -479,9 +483,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     AppButton.primary(
-                      label: 'THANH TOÁN VNPAY',
+                      label: 'THANH TOÁN SEPAY',
                       isLoading: _isProcessingPayment,
-                      onPressed: () => _handleVNPayCheckout(booking),
+                      onPressed: () => _handleSepayCheckout(booking),
                     ),
                   ],
                 ),

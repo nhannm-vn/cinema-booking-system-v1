@@ -254,8 +254,8 @@ void main() {
       expect(find.text('THANH TOÁN'), findsOneWidget);
       expect(find.text('1 GHẾ (A1)'), findsOneWidget);
       expect(find.text('1x Bắp Rang Bơ'), findsOneWidget);
-      expect(find.textContaining('VNPAY SANDBOX'), findsOneWidget);
-      expect(find.text('THANH TOÁN VNPAY'), findsOneWidget);
+      expect(find.textContaining('CHUYỂN KHOẢN NGÂN HÀNG VIETQR'), findsOneWidget);
+      expect(find.text('THANH TOÁN SEPAY'), findsOneWidget);
     });
 
     test('BookingProvider voucher discount applies ONLY to ticketTotal, NEVER to foodTotal', () {

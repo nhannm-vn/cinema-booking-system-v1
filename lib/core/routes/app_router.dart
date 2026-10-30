@@ -7,6 +7,7 @@ import '../../features/booking/presentation/screens/checkout_screen.dart';
 import '../../features/booking/presentation/screens/food_selection_screen.dart';
 import '../../features/booking/presentation/screens/seat_selection_screen.dart';
 import '../../features/booking/presentation/screens/showtime_selection_screen.dart';
+import '../../features/booking/presentation/screens/sepay_payment_screen.dart';
 import '../../features/booking/presentation/screens/vnpay_webview_screen.dart';
 import '../../features/cinemas/data/cinema_model.dart';
 import '../../features/cinemas/presentation/screens/cinema_detail_screen.dart';
@@ -61,6 +62,8 @@ abstract final class AppRoutes {
   static const String seatSelect = '/seat-select'; // S06
   static const String foodSelect = '/food-select'; // S07
   static const String checkout = '/checkout'; // S08
+  static const String sepayPayment = '/sepay-payment'; // S08B
+  static const String sepayWebview = '/sepay-webview';
   static const String vnpayWebview = '/vnpay-webview';
   static const String ticketSuccess = '/ticket-success'; // S09
   static const String myTickets = '/my-tickets'; // S10
@@ -248,7 +251,40 @@ abstract final class AppRouter {
           settings: settings,
         );
 
-      // S08B VNPay WebView
+      // S08B SePay VietQR Payment & WebView
+      case AppRoutes.sepayPayment:
+      case AppRoutes.sepayWebview:
+        String paymentUrl = '';
+        String bookingCode = '';
+        String? txnRef;
+        String bank = 'MBBank';
+        String accountNo = '0000123456789';
+        String accountName = 'CINEMA BOOKING SYSTEM';
+        int amount = 0;
+        if (settings.arguments is Map) {
+          final map = settings.arguments as Map;
+          paymentUrl = (map['paymentUrl'] as String?) ?? '';
+          bookingCode = (map['bookingCode'] as String?) ?? '';
+          txnRef = map['txnRef'] as String?;
+          bank = (map['bank'] as String?) ?? 'MBBank';
+          accountNo = (map['accountNo'] as String?) ?? '0000123456789';
+          accountName = (map['accountName'] as String?) ?? 'CINEMA BOOKING SYSTEM';
+          amount = (map['amount'] as int?) ?? 0;
+        }
+        return MaterialPageRoute(
+          builder: (_) => SepayPaymentScreen(
+            paymentUrl: paymentUrl,
+            bookingCode: bookingCode,
+            txnRef: txnRef,
+            bank: bank,
+            accountNo: accountNo,
+            accountName: accountName,
+            amount: amount,
+          ),
+          settings: settings,
+        );
+
+      // S08B VNPay WebView (Legacy Compatibility)
       case AppRoutes.vnpayWebview:
         String paymentUrl = '';
         String bookingCode = '';

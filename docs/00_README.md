@@ -11,7 +11,7 @@
 | 2 | `TECH_STACK.md` | Bộ công nghệ chuẩn: Supabase + PostgreSQL + RLS + RPC + Edge Functions | Đọc trước khi triển khai backend, auth, realtime, RPC |
 | 3 | `DESIGN_TOKENS.md` | Bảng màu, typography, spacing, bo góc, component chuẩn | Trước khi viết bất kỳ widget/UI nào |
 | 4 | `PROJECT_STRUCTURE.md` | Cấu trúc thư mục (Feature-First), pubspec, phân tầng kiến trúc | Khi tạo file/thư mục mới, kết nối layer |
-| 5 | `BUSINESS_RULES.md` | Toàn bộ nghiệp vụ: giá vé snapshot, giữ ghế, VNPay, soát vé, hủy vé, hằng số | Khi viết logic / repository / RPC / UI flow |
+| 5 | `BUSINESS_RULES.md` | Toàn bộ nghiệp vụ: giá vé snapshot, giữ ghế, SePay VietQR, soát vé, hủy vé, hằng số | Khi viết logic / repository / RPC / UI flow |
 | 6 | `ROLE_FLOWS.md` | Luồng chi tiết cho 5 role (Guest, Customer, Staff, Manager, Admin) và ma trận S01–S31 | Khi làm một màn hình hoặc luồng role |
 
 ## Cách ra lệnh cho AI (mẫu)

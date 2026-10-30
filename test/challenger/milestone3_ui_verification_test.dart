@@ -413,8 +413,8 @@ void main() {
       expect(find.text('THANH TOÁN'), findsOneWidget);
       expect(find.text('1 GHẾ (A1)'), findsOneWidget);
       expect(find.text('1x Combo Solo Bắp Nước'), findsOneWidget);
-      expect(find.textContaining('VNPAY SANDBOX'), findsOneWidget);
-      expect(find.text('THANH TOÁN VNPAY'), findsOneWidget);
+      expect(find.textContaining('CHUYỂN KHOẢN NGÂN HÀNG VIETQR'), findsOneWidget);
+      expect(find.text('THANH TOÁN SEPAY'), findsOneWidget);
     });
 
     testWidgets('1.5 S09: TicketSuccessScreen renders success icon, header, TicketCard, and actions', (tester) async {
@@ -648,7 +648,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       verifyMaxOnePrimaryButton(tester);
-      expect(find.widgetWithText(ElevatedButton, 'THANH TOÁN VNPAY'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'THANH TOÁN SEPAY'), findsOneWidget);
     });
 
     testWidgets('3.5 S09 has exactly 1 primary button', (tester) async {

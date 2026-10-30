@@ -311,17 +311,18 @@ void main() {
     // -------------------------------------------------------------------------
     test('Scenario 5: Staff Counter Sales with Cash Change & Direct Issuance', () {
       final now = DateTime.now();
+      final weekdayShowtime = DateTime(2026, 10, 28, 14, 0); // Wednesday 14:00 (weekday non-prime)
 
       // 1. Staff selects 2 Standard seats (2 * 80,000 = 160,000 VND)
       final priceSeat1 = calculateSeatPrice(
         type: SeatType.standard,
         format: '2D',
-        startTime: now,
+        startTime: weekdayShowtime,
       );
       final priceSeat2 = calculateSeatPrice(
         type: SeatType.standard,
         format: '2D',
-        startTime: now,
+        startTime: weekdayShowtime,
       );
       final totalAmount = priceSeat1 + priceSeat2;
       expect(totalAmount, 160000);

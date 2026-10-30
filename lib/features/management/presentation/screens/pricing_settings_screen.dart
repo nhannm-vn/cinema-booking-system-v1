@@ -370,109 +370,107 @@ class _PricingSettingsScreenState extends State<PricingSettingsScreen> {
     final simTotal = _calculateSimulatedPrice();
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.canvasElevated,
-        borderRadius: AppRadius.zeroRadius,
         border: Border.all(color: AppColors.primary, width: 1.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Material(
+        color: AppColors.canvasElevated,
+        borderRadius: AppRadius.zeroRadius,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                'MÔ PHỎNG TÍNH GIÁ TRỰC TIẾP (TEST FORMULA)'.toUpperCase(),
-                style: AppTextStyles.captionUppercase.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.calculate_outlined, color: AppColors.primary, size: 20),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'MÔ PHỎNG TÍNH GIÁ TRỰC TIẾP (TEST FORMULA)'.toUpperCase(),
+                    style: AppTextStyles.captionUppercase.copyWith(
+                      color: AppColors.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Selector: Format
+              Text('Định dạng:', style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
+              const SizedBox(height: AppSpacing.xxs),
+              Row(
+                children: ['2D', '3D', 'IMAX'].map((fmt) {
+                  final isSel = _simFormat == fmt;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: ChoiceChip(
+                      label: Text(fmt),
+                      selected: isSel,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.canvas,
+                      onSelected: (_) => setState(() => _simFormat = fmt),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+
+              // Selector: Seat Type
+              Text('Loại ghế:', style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
+              const SizedBox(height: AppSpacing.xxs),
+              Row(
+                children: [
+                  _buildSimSeatChip('Thường', 'standard'),
+                  const SizedBox(width: AppSpacing.xs),
+                  _buildSimSeatChip('VIP', 'vip'),
+                  const SizedBox(width: AppSpacing.xs),
+                  _buildSimSeatChip('Đôi (Couple)', 'couple'),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+
+              // Switches
+              SwitchListTile(
+                title: const Text('Áp dụng suất Cuối tuần (T6–CN)', style: TextStyle(color: AppColors.ink)),
+                value: _simIsWeekend,
+                activeThumbColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (val) => setState(() => _simIsWeekend = val),
+              ),
+              SwitchListTile(
+                title: const Text('Áp dụng khung Giờ vàng (18h–22h)', style: TextStyle(color: AppColors.ink)),
+                value: _simIsPrime,
+                activeThumbColor: AppColors.primary,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (val) => setState(() => _simIsPrime = val),
+              ),
+
+              const Divider(color: AppColors.hairline, height: AppSpacing.md),
+
+              // Result Formula
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'GIÁ VÉ MÔ PHỎNG:',
+                    style: AppTextStyles.captionUppercase.copyWith(
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    CurrencyFormatter.format(simTotal),
+                    style: AppTextStyles.displayLg.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Selector: Format
-          Text('Định dạng:', style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
-          const SizedBox(height: AppSpacing.xxs),
-          Row(
-            children: ['2D', '3D', 'IMAX'].map((fmt) {
-              final isSel = _simFormat == fmt;
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.xs),
-                child: ChoiceChip(
-                  label: Text(fmt),
-                  selected: isSel,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.canvas,
-                  onSelected: (_) => setState(() => _simFormat = fmt),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-
-          // Selector: Seat Type
-          Text('Loại ghế:', style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
-          const SizedBox(height: AppSpacing.xxs),
-          Row(
-            children: [
-              _buildSimSeatChip('Thường', 'standard'),
-              const SizedBox(width: AppSpacing.xs),
-              _buildSimSeatChip('VIP', 'vip'),
-              const SizedBox(width: AppSpacing.xs),
-              _buildSimSeatChip('Đôi (Couple)', 'couple'),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-
-          // Switches
-          Material(
-            color: Colors.transparent,
-            child: SwitchListTile(
-              title: const Text('Áp dụng suất Cuối tuần (T6–CN)', style: TextStyle(color: AppColors.ink)),
-              value: _simIsWeekend,
-              activeThumbColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (val) => setState(() => _simIsWeekend = val),
-            ),
-          ),
-          Material(
-            color: Colors.transparent,
-            child: SwitchListTile(
-              title: const Text('Áp dụng khung Giờ vàng (18h–22h)', style: TextStyle(color: AppColors.ink)),
-              value: _simIsPrime,
-              activeThumbColor: AppColors.primary,
-              contentPadding: EdgeInsets.zero,
-              onChanged: (val) => setState(() => _simIsPrime = val),
-            ),
-          ),
-
-          const Divider(color: AppColors.hairline, height: AppSpacing.md),
-
-          // Result Formula
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'GIÁ VÉ MÔ PHỎNG:',
-                style: AppTextStyles.captionUppercase.copyWith(
-                  color: AppColors.muted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                CurrencyFormatter.format(simTotal),
-                style: AppTextStyles.displayLg.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

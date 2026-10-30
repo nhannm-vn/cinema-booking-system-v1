@@ -16,9 +16,16 @@ insert into public.pricing_settings (
 -- 2. Cinemas
 insert into public.cinemas (id, name, address, phone, lat, lng, opening_hours, is_active)
 values
-  ('cn_q1', 'Cinema Star Quận 1', '123 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM', '028 3822 1234', 10.7725, 106.6980, '08:00 - 23:30', true),
-  ('cn_tb', 'Cinema Star Tân Bình', '456 Hoàng Văn Thụ, Phường 4, Quận Tân Bình, TP.HCM', '028 3844 5678', 10.7981, 106.6534, '08:30 - 23:00', true)
-on conflict (id) do nothing;
+  ('cn_q1', 'CGV Vincom Center Đồng Khởi', 'Tầng 3, TTTM Vincom Center, 72 Lê Thánh Tôn, Phường Bến Nghé, Quận 1, TP.HCM', '1900 6017', 10.77810, 106.70220, '08:00 - 23:30', true),
+  ('cn_tb', 'Lotte Cinema Cộng Hòa (Pico Plaza)', 'Tầng 4, Pico Plaza, 20 Cộng Hòa, Phường 12, Quận Tân Bình, TP.HCM', '028 3844 5678', 10.80155, 106.65225, '08:30 - 23:00', true)
+on conflict (id) do update set
+  name = excluded.name,
+  address = excluded.address,
+  phone = excluded.phone,
+  lat = excluded.lat,
+  lng = excluded.lng,
+  opening_hours = excluded.opening_hours,
+  is_active = excluded.is_active;
 
 -- 3. Rooms
 insert into public.rooms (id, cinema_id, name, formats, rows, cols, seat_layout, seat_count)
@@ -179,6 +186,24 @@ begin
     is_locked = excluded.is_locked;
 
   alter table public.profiles enable trigger trg_protect_profile;
+
+  -- 3. Đảm bảo GoTrue Auth không bị lỗi null token và khởi tạo auth.identities
+  update auth.users set
+    confirmation_token = coalesce(confirmation_token, ''),
+    email_change = coalesce(email_change, ''),
+    email_change_token_new = coalesce(email_change_token_new, ''),
+    recovery_token = coalesce(recovery_token, ''),
+    email_change_token_current = coalesce(email_change_token_current, ''),
+    phone_change = coalesce(phone_change, ''),
+    phone_change_token = coalesce(phone_change_token, '');
+
+  insert into auth.identities (
+    id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at
+  )
+  select
+    id, id, json_build_object('sub', id::text, 'email', email)::jsonb, 'email', id::text, now(), now(), now()
+  from auth.users
+  on conflict (provider, provider_id) do nothing;
 end $$;
 
 -- ----------------------------------------------------------------------------
@@ -227,7 +252,7 @@ insert into public.bookings (
   'paid',
   'pending',
   '{"total": 285000, "base_price": 200000, "food_total": 85000, "discount": 0}'::jsonb,
-  'vnpay',
+  'sepay',
   now(),
   'b1111111-1111-1111-1111-111111111101',
   'cn_q1',

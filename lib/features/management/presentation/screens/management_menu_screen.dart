@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/routes/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/app_user.dart';
@@ -221,8 +220,6 @@ class ManagementMenuScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.canvasElevated,
-        borderRadius: AppRadius.zeroRadius,
         border: Border.all(color: AppColors.hairline, width: 1),
       ),
       child: Material(
