@@ -132,7 +132,7 @@ class BookingModel {
       'channel': channel,
       'sold_by': soldBy,
       'status': status,
-      'hold_until': holdUntil?.toIso8601String(),
+      'hold_until': holdUntil?.toUtc().toIso8601String(),
       'showtime_id': showtimeId,
       'cinema_id': cinemaId,
       'movie_title': movieTitle,
@@ -141,7 +141,7 @@ class BookingModel {
       'cinema_name': cinemaName,
       'room_name': roomName,
       'format': format,
-      'showtime_start': showtimeStart.toIso8601String(),
+      'showtime_start': showtimeStart.toUtc().toIso8601String(),
       'seats': seats,
       'foods': foods,
       'food_status': foodStatus,
@@ -149,11 +149,11 @@ class BookingModel {
       'payment_method': paymentMethod,
       'sepay_transaction_id': sepayTransactionId ?? vnpTransactionNo,
       'vnp_transaction_no': vnpTransactionNo ?? sepayTransactionId,
-      'paid_at': paidAt?.toIso8601String(),
+      'paid_at': paidAt?.toUtc().toIso8601String(),
       'checked_in_by': checkedInBy,
-      'checked_in_at': checkedInAt?.toIso8601String(),
+      'checked_in_at': checkedInAt?.toUtc().toIso8601String(),
       'cancel_reason': cancelReason,
-      'created_at': createdAt.toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
     };
   }
 

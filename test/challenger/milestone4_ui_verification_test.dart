@@ -197,6 +197,15 @@ class MockChallengerStaffCounterRepository implements StaffCounterRepository {
     if (!sellSuccess) throw Exception('Lỗi thanh toán');
     lastPaymentMethod = paymentMethod;
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getShowtimeSeats(String showtimeId) async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableFoods(String cinemaId) async => [];
+
+  @override
+  Future<List<String>> getRoomLayout(String roomId) async => [];
 }
 
 class MockChallengerManagementRepository extends ManagementRepository {

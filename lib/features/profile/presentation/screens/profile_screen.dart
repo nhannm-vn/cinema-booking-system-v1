@@ -5,9 +5,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/customer_bottom_nav.dart';
+import '../../../../shared/widgets/manager_bottom_nav.dart';
+import '../../../../shared/widgets/staff_bottom_nav.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 
 /// S11 Profile Screen.
@@ -139,6 +142,16 @@ class ProfileScreen extends StatelessWidget {
                           style: AppTextStyles.caption.copyWith(color: AppColors.muted),
                         ),
                       ],
+                      if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xxxs),
+                        Text(
+                          'RẠP: ${user.cinemaId!.toUpperCase()}',
+                          style: AppTextStyles.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -181,8 +194,18 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const CustomerBottomNav(currentIndex: 3),
+      bottomNavigationBar: _buildBottomNav(user),
     );
+  }
+
+  Widget _buildBottomNav(AppUser? user) {
+    if (user?.role == UserRole.manager || user?.role == UserRole.admin) {
+      return const ManagerBottomNav(currentIndex: 2);
+    }
+    if (user?.role == UserRole.staff) {
+      return const StaffBottomNav(currentIndex: 3);
+    }
+    return const CustomerBottomNav(currentIndex: 3);
   }
 
   Widget _buildMenuItem({

@@ -648,6 +648,8 @@ class ManagementProvider extends ChangeNotifier {
   // ===========================================================================
   // S23: Staff Management
   // ===========================================================================
+  // S23: Staff & Manager Accounts
+  // ===========================================================================
   Future<void> loadEmployees(String cinemaId) async {
     _isLoading = true;
     _errorMessage = null;
@@ -695,13 +697,20 @@ class ManagementProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleUserLock(String userId, bool isLocked, String cinemaId) async {
+  Future<bool> toggleUserLock(String userId, bool isLocked, String cinemaId) async {
     try {
       await _repo.toggleUserLock(userId, isLocked);
+      final idx = _employees.indexWhere((e) => e.id == userId);
+      if (idx != -1) {
+        _employees[idx] = _employees[idx].copyWith(isLocked: isLocked);
+        notifyListeners();
+      }
       await loadEmployees(cinemaId);
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể đổi trạng thái khóa tài khoản: ${e.toString()}';
       notifyListeners();
+      return false;
     }
   }
 

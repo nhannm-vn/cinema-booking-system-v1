@@ -24,13 +24,32 @@ create trigger on_auth_user_created
 
 -- 2. Chặn tự nâng quyền hoặc đổi rạp trái phép
 create or replace function public.protect_profile_fields() returns trigger
-language plpgsql as $$
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_caller_role text := public.current_role_name();
+  v_caller_cinema text := public.current_cinema();
 begin
-  if public.current_role_name() is distinct from 'admin' then
-    new.role := old.role;
-    new.cinema_id := old.cinema_id;
-    new.is_locked := old.is_locked;
+  -- Admin có quyền cập nhật mọi trường
+  if v_caller_role = 'admin' then
+    new.updated_at := now();
+    return new;
   end if;
+
+  -- Manager chỉ được phép đổi is_locked của nhân viên (staff) trong cùng rạp
+  if v_caller_role = 'manager' and old.role = 'staff' and old.cinema_id = v_caller_cinema then
+    new.role := old.role;           -- Không được đổi role
+    new.cinema_id := old.cinema_id; -- Không được đổi rạp
+    new.updated_at := now();
+    return new;
+  end if;
+
+  -- Người dùng thông thường (hoặc tự update): không được đổi role, cinema_id, is_locked
+  new.role := old.role;
+  new.cinema_id := old.cinema_id;
+  new.is_locked := old.is_locked;
   new.updated_at := now();
   return new;
 end $$;

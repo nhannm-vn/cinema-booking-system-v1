@@ -6,7 +6,9 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/date_chip.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -52,8 +54,18 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
   String get _effectiveMovieId =>
       widget.movieId ?? widget.movie?.id ?? '';
 
-  String get _displayTitle =>
-      widget.movieTitle ?? widget.movie?.title ?? 'CHỌN SUẤT CHIẾU';
+  String get _displayTitle {
+    if (widget.movieTitle != null && widget.movieTitle!.isNotEmpty) {
+      return widget.movieTitle!;
+    }
+    if (widget.movie?.title != null && widget.movie!.title.isNotEmpty) {
+      return widget.movie!.title;
+    }
+    if (widget.cinemaName != null && widget.cinemaName!.isNotEmpty) {
+      return widget.cinemaName!;
+    }
+    return 'CHỌN SUẤT CHIẾU';
+  }
 
   String? get _effectiveAgeRating => widget.movie?.ageRating;
 
@@ -70,9 +82,9 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
   }
 
   Future<void> _fetchShowtimes() async {
-    if (_effectiveMovieId.isEmpty) {
+    if (_effectiveMovieId.isEmpty && (widget.cinemaId == null || widget.cinemaId!.isEmpty)) {
       setState(() {
-        _errorMessage = 'Thiếu thông tin phim.';
+        _errorMessage = 'Thiếu thông tin phim hoặc rạp chiếu.';
         _isLoading = false;
       });
       return;
@@ -85,7 +97,7 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
 
     try {
       final list = await _repo.getShowtimes(
-        movieId: _effectiveMovieId,
+        movieId: _effectiveMovieId.isNotEmpty ? _effectiveMovieId : null,
         date: _selectedDate,
         cinemaId: widget.cinemaId,
       );
@@ -114,7 +126,7 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
       return;
     }
 
-    final ageRating = _effectiveAgeRating;
+    final ageRating = showtime.ageRating ?? _effectiveAgeRating;
     final isRestricted = ageRating == 'T16' || ageRating == 'T18';
 
     if (isRestricted) {
@@ -257,10 +269,13 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
       );
     }
 
-    // Group showtimes by cinema
+    // Group showtimes by movie (when viewing by cinema) or by cinema (when viewing by movie)
+    final bool groupByMovie = _effectiveMovieId.isEmpty;
     final Map<String, List<ShowtimeModel>> grouped = {};
     for (final st in _showtimes) {
-      final key = st.cinemaName ?? 'Rạp Chiếu';
+      final key = groupByMovie
+          ? (st.movieTitle ?? 'PHIM CHIẾU')
+          : (st.cinemaName ?? 'Rạp Chiếu');
       grouped.putIfAbsent(key, () => []).add(st);
     }
 
@@ -268,36 +283,88 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
       padding: const EdgeInsets.all(AppSpacing.sm),
       itemCount: grouped.keys.length,
       itemBuilder: (context, index) {
-        final cinemaName = grouped.keys.elementAt(index);
-        final list = grouped[cinemaName]!;
+        final groupKey = grouped.keys.elementAt(index);
+        final list = grouped[groupKey]!;
+        final first = list.first;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cinema header
-              Row(
-                children: [
-                  const Icon(
-                    Icons.place_outlined,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: AppSpacing.xxs),
-                  Expanded(
-                    child: Text(
-                      cinemaName.toUpperCase(),
-                      style: AppTextStyles.titleMd.copyWith(color: AppColors.ink),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              // Header: Movie info if grouped by movie, or Cinema info if grouped by cinema
+              if (groupByMovie) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (first.posterUrl != null && first.posterUrl!.isNotEmpty) ...[
+                      SizedBox(
+                        width: 36,
+                        height: 52,
+                        child: AppNetworkImage(
+                          imageUrl: first.posterUrl,
+                          fit: BoxFit.cover,
+                          fallbackIcon: Icons.movie_outlined,
+                          iconSize: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (first.ageRating != null && first.ageRating!.isNotEmpty) ...[
+                                AppBadge.age(first.ageRating!),
+                                const SizedBox(width: AppSpacing.xxs),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  groupKey.toUpperCase(),
+                                  style: AppTextStyles.titleMd.copyWith(color: AppColors.ink),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xxxs),
+                          Text(
+                            '${list.length} SUẤT CHIẾU',
+                            style: AppTextStyles.captionUppercase.copyWith(
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxs),
+                  ],
+                ),
+              ] else ...[
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.place_outlined,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.xxs),
+                    Expanded(
+                      child: Text(
+                        groupKey.toUpperCase(),
+                        style: AppTextStyles.titleMd.copyWith(color: AppColors.ink),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xs),
 
-              // Showtimes in cinema
+              // Showtimes in group
               ...list.map((st) {
                 final isPast = st.isPast;
                 final isSoldOut = st.isSoldOut || isPast;

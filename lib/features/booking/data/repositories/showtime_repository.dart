@@ -9,9 +9,9 @@ class ShowtimeRepository {
   ShowtimeRepository([SupabaseClient? supabase])
       : _supabase = supabase ?? Supabase.instance.client;
 
-  /// Fetch showtimes for a specific movie on a specific date.
+  /// Fetch showtimes for a specific movie or a specific cinema on a date.
   Future<List<ShowtimeModel>> getShowtimes({
-    required String movieId,
+    String? movieId,
     required DateTime date,
     String? cinemaId,
   }) async {
@@ -20,11 +20,14 @@ class ShowtimeRepository {
 
     var query = _supabase
         .from('showtimes')
-        .select('*, rooms(name), cinemas(name), movies(title)')
-        .eq('movie_id', movieId)
+        .select('*, rooms(name), cinemas(name), movies(title, age_rating, poster_url)')
         .eq('status', 'active')
         .gte('start_time', startOfDay.toUtc().toIso8601String())
         .lte('start_time', endOfDay.toUtc().toIso8601String());
+
+    if (movieId != null && movieId.isNotEmpty) {
+      query = query.eq('movie_id', movieId);
+    }
 
     if (cinemaId != null && cinemaId.isNotEmpty) {
       query = query.eq('cinema_id', cinemaId);
@@ -41,6 +44,8 @@ class ShowtimeRepository {
       enriched['room_name'] = room?['name'];
       enriched['cinema_name'] = cinema?['name'];
       enriched['movie_title'] = movie?['title'];
+      enriched['age_rating'] = movie?['age_rating'];
+      enriched['poster_url'] = movie?['poster_url'];
 
       return ShowtimeModel.fromMap(enriched);
     }).toList();

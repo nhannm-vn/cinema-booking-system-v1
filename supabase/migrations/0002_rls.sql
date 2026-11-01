@@ -43,6 +43,22 @@ create policy profiles_update_self on public.profiles for update using (
   id = auth.uid()
 );
 
+create policy profiles_manager_update on public.profiles for update using (
+  public.current_role_name() = 'manager'
+  and role = 'staff'
+  and cinema_id = public.current_cinema()
+) with check (
+  public.current_role_name() = 'manager'
+  and role = 'staff'
+  and cinema_id = public.current_cinema()
+);
+
+create policy profiles_admin_update on public.profiles for update using (
+  public.current_role_name() = 'admin'
+) with check (
+  public.current_role_name() = 'admin'
+);
+
 -- 4. Cinemas & Rooms policies (Public read, admin write)
 create policy cinemas_read on public.cinemas for select using (true);
 create policy cinemas_admin_write on public.cinemas for all

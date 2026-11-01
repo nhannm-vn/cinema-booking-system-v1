@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_network_image.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../data/cinema_model.dart';
@@ -173,18 +174,66 @@ class _CinemaDetailScreenState extends State<CinemaDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Cinema Banner Placeholder
-              Container(
+              // Cinema Banner
+              SizedBox(
                 height: 180,
-                decoration: const BoxDecoration(
-                  color: AppColors.canvasElevated,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.movie_filter_outlined,
-                    color: AppColors.muted,
-                    size: 64,
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const AppNetworkImage(
+                      imageUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200',
+                      fit: BoxFit.cover,
+                      fallbackIcon: Icons.theater_comedy_outlined,
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.3),
+                            AppColors.canvas.withValues(alpha: 0.85),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: AppSpacing.xs,
+                      left: AppSpacing.xs,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: AppSpacing.xxxs,
+                            ),
+                            color: AppColors.primary,
+                            child: Text(
+                              'CINEMA',
+                              style: AppTextStyles.captionUppercase.copyWith(
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xxs),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: AppSpacing.xxxs,
+                            ),
+                            color: AppColors.canvasElevated,
+                            child: Text(
+                              cinema.isActive ? 'ĐANG HOẠT ĐỘNG' : 'TẠM NGHỈ',
+                              style: AppTextStyles.captionUppercase.copyWith(
+                                color: cinema.isActive ? AppColors.success : AppColors.muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),

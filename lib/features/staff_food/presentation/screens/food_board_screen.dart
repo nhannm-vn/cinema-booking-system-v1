@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -177,7 +178,9 @@ class _FoodBoardScreenState extends State<FoodBoardScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const StaffBottomNav(currentIndex: 1),
+      bottomNavigationBar: auth.currentUser?.role == UserRole.manager || auth.currentUser?.role == UserRole.admin
+          ? null
+          : const StaffBottomNav(currentIndex: 1),
     );
   }
 

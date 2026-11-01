@@ -5,6 +5,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
@@ -38,8 +39,13 @@ class _ShowtimesManagementScreenState extends State<ShowtimesManagementScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().currentUser;
+      final isAdmin = user?.role == UserRole.admin;
       if (user?.cinemaId != null && user!.cinemaId!.isNotEmpty) {
         _activeCinemaId = user.cinemaId!;
+      }
+      final provider = context.read<ManagementProvider>();
+      if (isAdmin) {
+        provider.loadCinemas();
       }
       _loadData();
     });
@@ -162,7 +168,10 @@ class _ShowtimesManagementScreenState extends State<ShowtimesManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().currentUser;
+    final isAdmin = user?.role == UserRole.admin;
     final provider = context.watch<ManagementProvider>();
+    final selectedCinema = provider.cinemas.where((c) => c.id == _activeCinemaId).firstOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -178,7 +187,7 @@ class _ShowtimesManagementScreenState extends State<ShowtimesManagementScreen> {
             ),
             const SizedBox(height: AppSpacing.xxxs),
             Text(
-              'RẠP ${_activeCinemaId.toUpperCase()}',
+              selectedCinema != null ? selectedCinema.name.toUpperCase() : 'RẠP ${_activeCinemaId.toUpperCase()}',
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
@@ -199,6 +208,49 @@ class _ShowtimesManagementScreenState extends State<ShowtimesManagementScreen> {
       ),
       body: Column(
         children: [
+          // Cinema Selector Bar (if Admin)
+          if (isAdmin && provider.cinemas.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: provider.cinemas.map((cinema) {
+                  final isSelected = _activeCinemaId == cinema.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.xs),
+                    child: ChoiceChip(
+                      label: Text(
+                        cinema.name.toUpperCase(),
+                        style: AppTextStyles.caption.copyWith(
+                          color: isSelected ? AppColors.ink : AppColors.muted,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                      selected: isSelected,
+                      selectedColor: AppColors.primary,
+                      backgroundColor: AppColors.canvasElevated,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.zeroRadius,
+                        side: BorderSide(color: AppColors.hairline),
+                      ),
+                      elevation: 0,
+                      pressElevation: 0,
+                      onSelected: (_) {
+                        setState(() {
+                          _activeCinemaId = cinema.id;
+                          _selectedRoomId = 'ALL';
+                        });
+                        _loadData();
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
           // 7-day Date Selector
           Container(
             padding: const EdgeInsets.symmetric(

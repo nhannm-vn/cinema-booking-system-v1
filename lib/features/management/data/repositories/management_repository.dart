@@ -456,26 +456,39 @@ class ManagementRepository {
 
   /// Khóa / mở khóa tài khoản người dùng.
   Future<void> toggleUserLock(String userId, bool isLocked) async {
-    await _supabase.from('profiles').update({
-      'is_locked': isLocked,
-    }).eq('id', userId);
+    try {
+      await _supabase.rpc('toggle_user_lock', params: {
+        'p_user_id': userId,
+        'p_is_locked': isLocked,
+      });
+    } catch (_) {
+      // Fallback direct update for mock or legacy backend
+      await _supabase.from('profiles').update({
+        'is_locked': isLocked,
+      }).eq('id', userId);
 
-    await logAudit(
-      action: isLocked ? 'lockUser' : 'unlockUser',
-      targetType: 'profile',
-      targetId: userId,
-      reason: isLocked ? 'Khóa tài khoản người dùng' : 'Mở khóa tài khoản người dùng',
-    );
+      await logAudit(
+        action: isLocked ? 'lockUser' : 'unlockUser',
+        targetType: 'profile',
+        targetId: userId,
+        reason: isLocked ? 'Khóa tài khoản người dùng' : 'Mở khóa tài khoản người dùng',
+      );
+    }
   }
 
-  /// Danh sách nhân sự của rạp.
+  /// Danh sách nhân sự:
+  /// - Manager: UI và RLS chỉ quản lý staff trong rạp của mình.
+  /// - Admin: quản lý cả manager và staff của cả 2 rạp (hoặc rạp cụ thể).
   Future<List<AppUser>> getEmployees(String cinemaId) async {
-    final response = await _supabase
-        .from('profiles')
-        .select()
-        .eq('cinema_id', cinemaId)
-        .inFilter('role', ['staff', 'manager'])
-        .order('created_at', ascending: false);
+    var query = _supabase.from('profiles').select();
+
+    if (cinemaId.isNotEmpty && cinemaId != 'all') {
+      query = query.eq('cinema_id', cinemaId);
+    }
+
+    query = query.inFilter('role', ['staff', 'manager']);
+
+    final response = await query.order('created_at', ascending: false);
 
     return (response as List).map((p) => AppUser.fromMap(p)).toList();
   }
