@@ -54,6 +54,7 @@ abstract final class RouteGuards {
       AppRoutes.manageVouchers,
       AppRoutes.manageManagers,
       AppRoutes.auditLogs,
+      AppRoutes.refundRequests,
     ];
 
     return protectedRoutes.contains(route);
@@ -101,6 +102,7 @@ abstract final class RouteGuards {
       AppRoutes.manageVouchers,
       AppRoutes.manageManagers,
       AppRoutes.auditLogs,
+      AppRoutes.refundRequests,
     ];
     if (adminRoutes.contains(route)) {
       return user.role == UserRole.admin;

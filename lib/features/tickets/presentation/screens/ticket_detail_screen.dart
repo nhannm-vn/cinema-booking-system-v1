@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -43,6 +42,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Timer? _pollingTimer;
 
   BuildContext? _activeCancelDialogContext;
+  String? _refundStatus;
 
   @override
   void initState() {
@@ -51,6 +51,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     final code = _ticket?.code ?? widget.bookingCode;
     if (code != null) {
       _setupRealtimeSubscription(code);
+      _loadRefundStatus(code);
     }
     if (_ticket == null && widget.bookingCode != null) {
       _loadTicketByCode(widget.bookingCode!);
@@ -179,9 +180,14 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
     }
   }
 
+  Future<void> _loadRefundStatus(String code) async {
+    final status = await context.read<TicketProvider>().getRefundRequestStatus(code);
+    if (mounted) setState(() => _refundStatus = status);
+  }
+
   void _showCancelDialog(BuildContext context, BookingModel ticket) {
-    final sepayTxnController = TextEditingController();
-    bool isCancelling = false;
+    final reasonController = TextEditingController();
+    bool isSubmitting = false;
 
     showDialog(
       context: context,
@@ -193,7 +199,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
               backgroundColor: AppColors.canvasElevated,
               shape: const RoundedRectangleBorder(borderRadius: AppRadius.zeroRadius),
               title: Text(
-                'XÁC NHẬN HỦY VÉ'.toUpperCase(),
+                'YÊU CẦU HỦY VÉ'.toUpperCase(),
                 style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
               ),
               content: SingleChildScrollView(
@@ -202,94 +208,16 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bạn có chắc chắn muốn hủy vé #${ticket.code.toUpperCase()}? Theo chính sách của rạp, bạn sẽ được hoàn tiền 100% (${CurrencyFormatter.format(ticket.totalAmount)}) về phương thức thanh toán ban đầu.',
+                      'Gửi yêu cầu hủy vé #${ticket.code.toUpperCase()} lên Admin. Sau khi Admin chuyển khoản hoàn ${CurrencyFormatter.format(ticket.totalAmount)} (100%), vé sẽ tự động chuyển sang trạng thái ĐÃ HỦY.',
                       style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-
-                    // SePay Sandbox Test Guide Card
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.canvas,
-                        border: Border.all(color: AppColors.hairline),
-                        borderRadius: AppRadius.zeroRadius,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.swap_vert_circle_outlined, color: AppColors.primary, size: 20),
-                              const SizedBox(width: AppSpacing.xs),
-                              Expanded(
-                                child: Text(
-                                  'DEMO HOÀN TIỀN SEPAY SANDBOX'.toUpperCase(),
-                                  style: AppTextStyles.captionUppercase.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'Mở SePay Sandbox và tạo giao dịch "Tiền ra" với thông tin:',
-                            style: AppTextStyles.caption.copyWith(color: AppColors.muted),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          _buildCopyableRow(
-                            'Tài khoản SePay:',
-                            '0000000001',
-                            '0000000001',
-                          ),
-                          _buildCopyableRow(
-                            'Loại giao dịch:',
-                            'Tiền ra (Chi tiền)',
-                            null,
-                          ),
-                          _buildCopyableRow(
-                            'Số tiền:',
-                            CurrencyFormatter.format(ticket.totalAmount),
-                            ticket.totalAmount.toString(),
-                          ),
-                          _buildCopyableRow(
-                            'Nội dung CK:',
-                            ticket.code.toUpperCase(),
-                            ticket.code.toUpperCase(),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          const Row(
-                            children: [
-                              Icon(Icons.sync, color: AppColors.primary, size: 16),
-                              SizedBox(width: AppSpacing.xs),
-                              Expanded(
-                                child: Text(
-                                  'Đang lắng nghe SePay Realtime...',
-                                  style: TextStyle(
-                                    color: AppColors.muted,
-                                    fontSize: 11,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    // Optional SePay Transaction ID
                     TextField(
-                      controller: sepayTxnController,
+                      controller: reasonController,
                       style: AppTextStyles.bodySm.copyWith(color: AppColors.ink),
                       decoration: InputDecoration(
-                        labelText: 'MÃ GIAO DỊCH SEPAY (TÙY CHỌN)',
+                        labelText: 'LÝ DO (TÙY CHỌN)',
                         labelStyle: AppTextStyles.captionUppercase.copyWith(color: AppColors.muted),
-                        hintText: 'Nhập ID SePay (ví dụ: 123456)',
-                        hintStyle: AppTextStyles.caption.copyWith(color: AppColors.muted),
                         filled: true,
                         fillColor: AppColors.canvas,
                         border: const OutlineInputBorder(borderRadius: AppRadius.zeroRadius),
@@ -316,53 +244,34 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                     elevation: 0,
                     shape: const RoundedRectangleBorder(borderRadius: AppRadius.zeroRadius),
                   ),
-                  onPressed: isCancelling
+                  onPressed: isSubmitting
                       ? null
                       : () async {
-                          setDialogState(() => isCancelling = true);
+                          setDialogState(() => isSubmitting = true);
                           final scaffoldMessenger = ScaffoldMessenger.of(context);
                           final provider = context.read<TicketProvider>();
-                          final txnId = sepayTxnController.text.trim().isNotEmpty
-                              ? sepayTxnController.text.trim()
+                          final reason = reasonController.text.trim().isNotEmpty
+                              ? reasonController.text.trim()
                               : null;
-                          final reason = txnId != null
-                              ? 'Khách hủy vé trực tuyến (Mã GD SePay: $txnId)'
-                              : 'Khách hủy vé trực tuyến';
-                          final success = await provider.cancelBooking(ticket.code, reason: reason);
-                          if (success && txnId != null) {
-                            try {
-                              await Supabase.instance.client
-                                  .from('bookings')
-                                  .update({'sepay_transaction_id': txnId})
-                                  .eq('code', ticket.code);
-                            } catch (_) {}
-                          }
+                          final success = await provider.requestRefund(ticket.code, reason: reason);
                           _activeCancelDialogContext = null;
                           if (dialogCtx.mounted) {
                             Navigator.pop(dialogCtx);
                           }
-                          if (success) {
-                            if (context.mounted) {
-                              setState(() {
-                                _ticket = _ticket?.copyWith(
-                                  status: 'cancelled',
-                                  sepayTransactionId: txnId ?? _ticket?.sepayTransactionId,
-                                );
-                              });
-                              _showRefundSuccessDialog(context, _ticket ?? ticket);
-                            }
-                          } else {
-                            final err = provider.errorMessage ?? 'Hủy vé thất bại';
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text(err),
-                                backgroundColor: AppColors.warning,
-                              ),
-                            );
+                          if (success && mounted) {
+                            setState(() => _refundStatus = 'pending');
                           }
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(success
+                                  ? 'Đã gửi yêu cầu hủy vé. Vui lòng chờ Admin hoàn tiền.'
+                                  : (provider.errorMessage ?? 'Gửi yêu cầu thất bại')),
+                              backgroundColor: success ? AppColors.success : AppColors.warning,
+                            ),
+                          );
                         },
                   child: Text(
-                    'XÁC NHẬN HỦY'.toUpperCase(),
+                    'GỬI YÊU CẦU'.toUpperCase(),
                     style: AppTextStyles.button.copyWith(color: AppColors.ink),
                   ),
                 ),
@@ -371,51 +280,6 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildCopyableRow(String label, String displayValue, String? copyValue) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTextStyles.caption.copyWith(color: AppColors.muted)),
-          Row(
-            children: [
-              Text(
-                displayValue,
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.ink,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (copyValue != null) ...[
-                const SizedBox(width: 4),
-                InkWell(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: copyValue));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: AppColors.canvasElevated,
-                        content: Text(
-                          'ĐÃ SAO CHÉP $copyValue'.toUpperCase(),
-                          style: AppTextStyles.caption.copyWith(color: AppColors.primary),
-                        ),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(2),
-                    child: Icon(Icons.copy, size: 14, color: AppColors.primary),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -802,6 +666,27 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
                   AppButton.outline(
                     label: 'XEM BIÊN NHẬN HOÀN TIỀN',
                     onPressed: () => _showRefundSuccessDialog(context, ticket),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (ticket.status == 'paid' && _refundStatus == 'pending') ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.canvasElevated,
+                border: Border.all(color: AppColors.info),
+                borderRadius: AppRadius.zeroRadius,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.hourglass_top, color: AppColors.info, size: 20),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Đã gửi yêu cầu hủy vé. Đang chờ Admin hoàn ${CurrencyFormatter.format(ticket.totalAmount)}.',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.info),
+                    ),
                   ),
                 ],
               ),

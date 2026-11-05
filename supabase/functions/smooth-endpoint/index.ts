@@ -121,58 +121,27 @@ Deno.serve(async (req) => {
 
     // 2.5 Handle Refund (transferType == 'out': Rạp chuyển trả tiền cho khách)
     if (transferType === 'out') {
-      const { data: b } = await supabaseAdmin
-        .from('bookings')
-        .select('*')
-        .eq('code', bookingCode)
-        .single();
-
-      if (!b) {
-        return new Response(JSON.stringify({ error: 'BOOKING_NOT_FOUND' }), {
-          status: 404,
+      const REFUND_ACCOUNTS = ['0000000001', '0000123456789'];
+      const accountNumber = String(payload.accountNumber || payload.account_number || payload.subAccount || '').trim();
+      if (accountNumber && !REFUND_ACCOUNTS.includes(accountNumber)) {
+        return new Response(JSON.stringify({ error: 'INVALID_REFUND_ACCOUNT', expected: '0000000001', received: accountNumber }), {
+          status: 400,
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      if (b.status !== 'cancelled') {
-        // Xóa ghế đã giữ
-        await supabaseAdmin.from('seats').delete().eq('booking_code', bookingCode);
+      const { data: rpcData, error: refundError } = await supabaseAdmin.rpc('complete_refund', {
+        p_booking_code: bookingCode,
+        p_amount: Math.round(Math.abs(transferAmount)),
+        p_sepay_transaction_id: sepayTransactionId,
+      });
 
-        // Giảm sold_seats
-        const seatCount = Array.isArray(b.seats) ? b.seats.length : 0;
-        if (seatCount > 0 && b.showtime_id) {
-          const { data: st } = await supabaseAdmin
-            .from('showtimes')
-            .select('sold_seats')
-            .eq('id', b.showtime_id)
-            .single();
-          if (st) {
-            await supabaseAdmin
-              .from('showtimes')
-              .update({ sold_seats: Math.max(0, (st.sold_seats || 0) - seatCount) })
-              .eq('id', b.showtime_id);
-          }
-        }
-
-        // Cập nhật booking status = 'cancelled'
-        await supabaseAdmin.from('bookings').update({
-          status: 'cancelled',
-          food_status: b.food_status === 'pending' ? 'cancelled' : b.food_status,
-          cancel_reason: `Hoàn tiền SePay từ tài khoản rạp 0000000001: ${sepayTransactionId}`,
-          cancelled_at: new Date().toISOString(),
-          sepay_transaction_id: sepayTransactionId,
-        }).eq('code', bookingCode);
-
-        // Tạo thông báo
-        if (b.user_id) {
-          await supabaseAdmin.from('notifications').insert({
-            user_id: b.user_id,
-            type: 'bookingRefunded',
-            title: 'Đã hoàn vé xem phim',
-            body: `Vé ${bookingCode} đã được chuyển hoàn tiền 100% (+${transferAmount || b.price_snapshot?.total || 0}đ) từ tài khoản rạp 0000000001 (CINEMA BOOKING SYSTEM) về tài khoản khách hàng.`,
-            booking_code: bookingCode,
-          });
-        }
+      if (refundError) {
+        console.error('[SePay Webhook] Refund rejected:', refundError.message);
+        return new Response(JSON.stringify({ error: refundError.message }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
       return new Response(
@@ -181,6 +150,7 @@ Deno.serve(async (req) => {
           action: 'REFUNDED',
           booking_code: bookingCode,
           transaction_id: sepayTransactionId,
+          result: rpcData,
         }),
         {
           headers: {

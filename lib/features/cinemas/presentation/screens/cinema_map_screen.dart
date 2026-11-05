@@ -89,9 +89,13 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
   }
 
   Future<void> _openDirections(CinemaModel cinema) async {
-    final destination = Uri.encodeComponent('${cinema.name}, ${cinema.address}');
+    // Ưu tiên địa chỉ rõ ràng của rạp để Google Maps tìm chính xác địa chỉ/tên rạp,
+    // tránh việc truyền tọa độ GPS thô khiến Google Maps tự động gán vào quán ăn lân cận.
+    final destination = cinema.address.trim().isNotEmpty
+        ? Uri.encodeComponent(cinema.address.trim())
+        : (cinema.lat != 0 && cinema.lng != 0 ? '${cinema.lat},${cinema.lng}' : Uri.encodeComponent(cinema.name));
     final url =
-        'https://www.google.com/maps/dir/?api=1&destination=$destination';
+        'https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving';
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -411,7 +415,7 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
                   const Icon(Icons.location_on, size: 14, color: AppColors.primary),
                   const SizedBox(width: AppSpacing.xxxs),
                   Text(
-                    'TP. HỒ CHÍ MINH · ${cinemas.length} CỤM RẠP',
+                    '${cinemas.length} CỤM RẠP HOẠT ĐỘNG',
                     style: AppTextStyles.captionUppercase.copyWith(
                       color: AppColors.ink,
                       fontWeight: FontWeight.w700,
@@ -422,14 +426,38 @@ class _CinemaMapScreenState extends State<CinemaMapScreen> {
             ),
           ),
 
-          // Interactive pins for cinemas
-          ...cinemas.map((cinema) {
+          // Interactive pins for cinemas (dynamically projected by real GPS coordinates)
+          ...cinemas.asMap().entries.map((entry) {
+            final index = entry.key;
+            final cinema = entry.value;
             final isSelected = selected?.id == cinema.id;
 
-            // Real-world geographic layout (Tan Binh NW -> top-left, District 1 SE -> center-right)
-            final bool isQ1 = cinema.id == 'cn_q1';
-            final double topFraction = isQ1 ? 0.36 : 0.20;
-            final double leftFraction = isQ1 ? 0.62 : 0.30;
+            // Calculate fraction dynamically based on relative GPS coordinates
+            double topFraction;
+            double leftFraction;
+
+            if (cinemas.length > 1) {
+              final lats = cinemas.map((c) => c.lat).where((l) => l != 0).toList();
+              final lngs = cinemas.map((c) => c.lng).where((l) => l != 0).toList();
+              final minLat = lats.isEmpty ? 10.77 : lats.reduce((a, b) => a < b ? a : b);
+              final maxLat = lats.isEmpty ? 10.88 : lats.reduce((a, b) => a > b ? a : b);
+              final minLng = lngs.isEmpty ? 106.65 : lngs.reduce((a, b) => a < b ? a : b);
+              final maxLng = lngs.isEmpty ? 106.81 : lngs.reduce((a, b) => a > b ? a : b);
+
+              if (maxLat > minLat && maxLng > minLng && cinema.lat != 0 && cinema.lng != 0) {
+                // Higher lat (North) -> lower top in canvas. Higher lng (East) -> higher left
+                final latRatio = (cinema.lat - minLat) / (maxLat - minLat);
+                final lngRatio = (cinema.lng - minLng) / (maxLng - minLng);
+                topFraction = 0.40 - (latRatio * 0.24);
+                leftFraction = 0.18 + (lngRatio * 0.58);
+              } else {
+                topFraction = 0.18 + (index * 0.10);
+                leftFraction = 0.20 + (index * 0.24);
+              }
+            } else {
+              topFraction = 0.28;
+              leftFraction = 0.50;
+            }
 
             return Positioned(
               top: MediaQuery.of(context).size.height * topFraction,

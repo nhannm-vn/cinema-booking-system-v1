@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/app_error_formatter.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../data/auth_repository.dart';
 
@@ -54,7 +55,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = AppErrorFormatter.format(e);
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       return false;
@@ -82,7 +83,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = AppErrorFormatter.format(e);
       _status = AuthStatus.unauthenticated;
       notifyListeners();
       return false;
@@ -106,7 +107,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _errorMessage = AppErrorFormatter.format(e);
       _status = AuthStatus.authenticated;
       notifyListeners();
       return false;

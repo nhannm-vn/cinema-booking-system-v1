@@ -15,6 +15,7 @@ import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../../booking/data/models/food_model.dart';
+import '../../data/repositories/management_repository.dart';
 import '../controllers/management_provider.dart';
 
 /// Screen S16: Food & Concessions Catalog Management with availability toggle.
@@ -43,6 +44,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
       }
       final provider = context.read<ManagementProvider>();
       if (isAdmin) {
+        _activeCinemaId = ManagementRepository.systemCinemaId;
         provider.loadCinemas();
       }
       _loadFoods();
@@ -157,7 +159,9 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             ),
             const SizedBox(height: AppSpacing.xxxs),
             Text(
-              selectedCinema != null ? selectedCinema.name.toUpperCase() : 'RẠP ${_activeCinemaId.toUpperCase()}',
+              _activeCinemaId == ManagementRepository.systemCinemaId
+                  ? 'TOÀN HỆ THỐNG (MỌI RẠP)'
+                  : (selectedCinema != null ? selectedCinema.name.toUpperCase() : 'RẠP ${_activeCinemaId.toUpperCase()}'),
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w700,
@@ -187,34 +191,10 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                 vertical: AppSpacing.xs,
               ),
               child: Row(
-                children: provider.cinemas.map((cinema) {
-                  final isSelected = _activeCinemaId == cinema.id;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs),
-                    child: ChoiceChip(
-                      label: Text(
-                        cinema.name.toUpperCase(),
-                        style: AppTextStyles.caption.copyWith(
-                          color: isSelected ? AppColors.ink : AppColors.muted,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.canvasElevated,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.zeroRadius,
-                        side: BorderSide(color: AppColors.hairline),
-                      ),
-                      elevation: 0,
-                      pressElevation: 0,
-                      onSelected: (_) {
-                        setState(() => _activeCinemaId = cinema.id);
-                        _loadFoods();
-                      },
-                    ),
-                  );
-                }).toList(),
+                children: [
+                  _buildCinemaChip(ManagementRepository.systemCinemaId, 'TOÀN HỆ THỐNG'),
+                  ...provider.cinemas.map((cinema) => _buildCinemaChip(cinema.id, cinema.name)),
+                ],
               ),
             ),
 
@@ -267,6 +247,35 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
     );
   }
 
+  Widget _buildCinemaChip(String id, String name) {
+    final isSelected = _activeCinemaId == id;
+    return Padding(
+      padding: const EdgeInsets.only(right: AppSpacing.xs),
+      child: ChoiceChip(
+        label: Text(
+          name.toUpperCase(),
+          style: AppTextStyles.caption.copyWith(
+            color: isSelected ? AppColors.ink : AppColors.muted,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        selected: isSelected,
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.canvasElevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.zeroRadius,
+          side: BorderSide(color: AppColors.hairline),
+        ),
+        elevation: 0,
+        pressElevation: 0,
+        onSelected: (_) {
+          setState(() => _activeCinemaId = id);
+          _loadFoods();
+        },
+      ),
+    );
+  }
+
   Widget _buildCategoryChip(String label, String value) {
     final isSelected = _selectedCategory == value;
     return ChoiceChip(
@@ -294,6 +303,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
   }
 
   Widget _buildBody(BuildContext context, ManagementProvider provider) {
+    final isAdmin = context.read<AuthProvider>().currentUser?.role == UserRole.admin;
     if (provider.isLoading) {
       return ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -341,13 +351,15 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
         itemBuilder: (context, index) {
           final food = list[index];
-          return _buildFoodCard(context, food, provider);
+          return _buildFoodCard(context, food, provider, isAdmin: isAdmin);
         },
       ),
     );
   }
 
-  Widget _buildFoodCard(BuildContext context, FoodModel food, ManagementProvider provider) {
+  Widget _buildFoodCard(BuildContext context, FoodModel food, ManagementProvider provider, {required bool isAdmin}) {
+    final isSystemFood = food.cinemaId == null;
+    final canEdit = isAdmin || !isSystemFood;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
@@ -388,6 +400,13 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.xs),
+                    if (isSystemFood) ...[
+                      const AppBadge(
+                        label: 'TOÀN HỆ THỐNG',
+                        backgroundColor: AppColors.info,
+                      ),
+                      const SizedBox(width: AppSpacing.xxs),
+                    ],
                     AppBadge(
                       label: food.category.toUpperCase(),
                       backgroundColor: AppColors.muted,
@@ -426,17 +445,23 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                     Switch(
                       value: food.isAvailable,
                       activeThumbColor: AppColors.success,
-                      onChanged: (val) => provider.toggleFood(food.id, val),
+                      onChanged: canEdit ? (val) => provider.toggleFood(food.id, val) : null,
                     ),
                     const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.ink),
-                      onPressed: () => _openAddEditFoodModal(context, food: food),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.warning),
-                      onPressed: () => _confirmDeleteFood(context, food),
-                    ),
+                    if (canEdit) ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.ink),
+                        onPressed: () => _openAddEditFoodModal(context, food: food),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.warning),
+                        onPressed: () => _confirmDeleteFood(context, food),
+                      ),
+                    ] else
+                      Text(
+                        'CHỈ XEM',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                      ),
                   ],
                 ),
               ],
@@ -501,7 +526,9 @@ class _FoodFormSheetState extends State<_FoodFormSheet> {
 
     final food = FoodModel(
       id: widget.food?.id ?? '',
-      cinemaId: widget.cinemaId,
+      cinemaId: isEditing
+          ? widget.food!.cinemaId
+          : (widget.cinemaId == ManagementRepository.systemCinemaId ? null : widget.cinemaId),
       name: _nameController.text.trim(),
       category: _category,
       price: price,

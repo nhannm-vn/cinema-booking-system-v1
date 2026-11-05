@@ -8,6 +8,7 @@ import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../../data/models/food_model.dart';
 import '../../data/models/showtime_model.dart';
 import '../../data/repositories/seat_repository.dart';
+import '../../../management/data/models/pricing_settings_model.dart';
 
 /// Provider managing active booking flow (S05, S06, S07, S08).
 class BookingProvider extends ChangeNotifier {
@@ -27,6 +28,9 @@ class BookingProvider extends ChangeNotifier {
   String? _appliedVoucherCode;
   int _discount = 0;
   String? _voucherError;
+
+  PricingSettingsModel _pricing = PricingSettingsModel.defaultSettings();
+  PricingSettingsModel get pricing => _pricing;
 
   BookingProvider([SeatRepository? seatRepo, SupabaseClient? supabase])
       : _seatRepo = seatRepo ?? SeatRepository(),
@@ -59,6 +63,25 @@ class BookingProvider extends ChangeNotifier {
     _currentBookingCode = null;
     _errorMessage = null;
     notifyListeners();
+    loadPricingSettings();
+  }
+
+  /// Tải bảng giá hiện hành từ `pricing_settings` (Admin cập nhật) - BUSINESS_RULES mục 4.
+  Future<void> loadPricingSettings() async {
+    try {
+      final client = _supabase ?? Supabase.instance.client;
+      final response = await client
+          .from('pricing_settings')
+          .select()
+          .eq('id', 1)
+          .maybeSingle();
+      if (response != null) {
+        _pricing = PricingSettingsModel.fromMap(response);
+        notifyListeners();
+      }
+    } catch (_) {
+      // Giữ bảng giá mặc định khi không tải được
+    }
   }
 
   /// Toggle seat selection (up to 8 seats).
@@ -103,27 +126,20 @@ class BookingProvider extends ChangeNotifier {
     final format = _selectedShowtime!.format;
     final start = _selectedShowtime!.startTime;
 
-    // Pricing rules
-    int basePrice = 80000;
-    if (format == '3D') basePrice = 100000;
-    if (format == 'IMAX') basePrice = 120000;
-
     final bool isWeekend = start.weekday == DateTime.friday ||
         start.weekday == DateTime.saturday ||
         start.weekday == DateTime.sunday;
-    final bool isPrime = start.hour >= 18 && start.hour < 22;
-
-    final int timeSurcharge = (isWeekend ? 10000 : 0) + (isPrime ? 10000 : 0);
+    final bool isPrime =
+        start.hour >= _pricing.primeStartHour && start.hour < _pricing.primeEndHour;
 
     for (final seatId in _selectedSeatIds) {
       final type = _selectedSeatTypes[seatId] ?? SeatType.standard;
-      if (type == SeatType.vip) {
-        total += basePrice + 20000 + timeSurcharge;
-      } else if (type == SeatType.couple) {
-        total += (2 * basePrice) + 20000 + timeSurcharge;
-      } else {
-        total += basePrice + timeSurcharge;
-      }
+      total += _pricing.calculateSeatPrice(
+        format: format,
+        seatType: type.name,
+        isWeekend: isWeekend,
+        isPrimeTime: isPrime,
+      );
     }
     return total;
   }

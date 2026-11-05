@@ -105,36 +105,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                // Error Banner
+                // Error / Info Banner
                 if (auth.errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: AppColors.canvasElevated,
-                      borderRadius: AppRadius.smRadius,
-                      border: Border.all(
-                        color: AppColors.warning,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: AppColors.warning,
-                          size: 20,
-                        ),
-                        const SizedBox(width: AppSpacing.xxs),
-                        Expanded(
-                          child: Text(
-                            auth.errorMessage!,
-                            style: AppTextStyles.bodySm.copyWith(
-                              color: AppColors.warning,
-                            ),
+                  Builder(
+                    builder: (context) {
+                      final isNotice = auth.errorMessage!.contains('thành công');
+                      final bannerColor = isNotice ? AppColors.success : AppColors.warning;
+                      return Container(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        decoration: BoxDecoration(
+                          color: AppColors.canvasElevated,
+                          borderRadius: AppRadius.smRadius,
+                          border: Border.all(
+                            color: bannerColor,
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isNotice ? Icons.check_circle_outline : Icons.error_outline,
+                              color: bannerColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSpacing.xxs),
+                            Expanded(
+                              child: Text(
+                                auth.errorMessage!,
+                                style: AppTextStyles.bodySm.copyWith(
+                                  color: bannerColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                 ],

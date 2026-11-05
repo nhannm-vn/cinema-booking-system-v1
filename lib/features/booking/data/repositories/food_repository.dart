@@ -9,12 +9,12 @@ class FoodRepository {
   FoodRepository([SupabaseClient? supabase])
       : _supabase = supabase ?? Supabase.instance.client;
 
-  /// Fetch foods available for a given cinema.
+  /// Fetch foods available for a given cinema: món của rạp + món toàn hệ thống (cinema_id null).
   Future<List<FoodModel>> getFoodsByCinema(String cinemaId) async {
     final response = await _supabase
         .from('foods')
         .select()
-        .eq('cinema_id', cinemaId)
+        .or('cinema_id.eq.$cinemaId,cinema_id.is.null')
         .order('price');
 
     return (response as List).map((f) => FoodModel.fromMap(f)).toList();

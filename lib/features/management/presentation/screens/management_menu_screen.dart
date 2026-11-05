@@ -165,6 +165,13 @@ class ManagementMenuScreen extends StatelessWidget {
               subtitle: 'Lịch sử soát vé, hoàn tiền, đổi giá, sơ đồ ghế',
               route: AppRoutes.auditLogs,
             ),
+            _buildMenuItem(
+              context,
+              icon: Icons.currency_exchange,
+              title: 'Yêu cầu hoàn vé',
+              subtitle: 'Xem yêu cầu hủy vé của khách và hoàn tiền qua SePay',
+              route: AppRoutes.refundRequests,
+            ),
           ],
 
           const SizedBox(height: AppSpacing.xl),

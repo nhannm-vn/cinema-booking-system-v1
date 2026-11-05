@@ -33,6 +33,8 @@ class FakeRefundTicketProvider extends ChangeNotifier implements TicketProvider 
   @override
   Future<void> loadMyTickets() async {}
 
+  final Map<String, String> _refundStatuses = {};
+
   @override
   Future<bool> cancelBooking(String code, {String reason = 'Khách hủy vé trực tuyến'}) async {
     final t = _tickets[code];
@@ -42,6 +44,18 @@ class FakeRefundTicketProvider extends ChangeNotifier implements TicketProvider 
       return true;
     }
     return false;
+  }
+
+  @override
+  Future<bool> requestRefund(String code, {String? reason}) async {
+    _refundStatuses[code] = 'pending';
+    notifyListeners();
+    return true;
+  }
+
+  @override
+  Future<String?> getRefundRequestStatus(String code) async {
+    return _refundStatuses[code];
   }
 
   @override
@@ -148,24 +162,14 @@ void main() {
       await tester.tap(find.text('HỦY VÉ VÀ HOÀN TIỀN'));
       await tester.pumpAndSettle();
 
-      expect(find.text('XÁC NHẬN HỦY VÉ'), findsOneWidget);
+      expect(find.text('YÊU CẦU HỦY VÉ'), findsOneWidget);
 
-      // Confirm cancel
-      await tester.tap(find.text('XÁC NHẬN HỦY'));
+      // Submit refund request to Admin
+      await tester.tap(find.text('GỬI YÊU CẦU'));
       await tester.pumpAndSettle();
 
-      // Verifies refund dialog is displayed
-      expect(find.text('HOÀN TIỀN THÀNH CÔNG'), findsOneWidget);
-      expect(find.textContaining('0000000001'), findsAtLeastNWidgets(1));
-      expect(find.textContaining('0000000002'), findsAtLeastNWidgets(1));
-
-      // Close dialog
-      await tester.tap(find.text('ĐÃ HIỂU & ĐÓNG'));
-      await tester.pumpAndSettle();
-
-      // Screen is now updated to cancelled state with permanent refund card
-      expect(find.text('ĐÃ HOÀN TIỀN 100% THÀNH CÔNG'), findsOneWidget);
-      expect(find.textContaining('0000000001 · CINEMA BOOKING SYSTEM'), findsOneWidget);
+      // Screen is updated to pending state with waiting card
+      expect(find.textContaining('Đã gửi yêu cầu hủy vé. Đang chờ Admin hoàn'), findsOneWidget);
     });
   });
 }

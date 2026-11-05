@@ -183,11 +183,18 @@ class ManagementRepository {
   // S16: Food & Concessions Catalog
   // ===========================================================================
 
-  /// Lấy danh sách thực đơn của rạp.
+  /// Mã đặc biệt dùng cho menu toàn hệ thống (lưu cinema_id = NULL).
+  static const String systemCinemaId = 'SYSTEM';
+
+  /// Lấy danh sách thực đơn:
+  /// - `SYSTEM`: chỉ món toàn hệ thống (Admin tạo).
+  /// - Mã rạp: món riêng của rạp + món toàn hệ thống.
   Future<List<FoodModel>> getFoods(String cinemaId, {String? category}) async {
     var query = _supabase.from('foods').select();
-    if (cinemaId.isNotEmpty && cinemaId != 'ALL') {
-      query = query.eq('cinema_id', cinemaId);
+    if (cinemaId == systemCinemaId) {
+      query = query.isFilter('cinema_id', null);
+    } else if (cinemaId.isNotEmpty && cinemaId != 'ALL') {
+      query = query.or('cinema_id.eq.$cinemaId,cinema_id.is.null');
     }
     if (category != null && category.isNotEmpty && category != 'ALL') {
       query = query.eq('category', category.toLowerCase());
@@ -265,13 +272,16 @@ class ManagementRepository {
   }
 
   /// Tạo phòng mới.
+  /// `rooms.id` là uuid do PostgreSQL tự sinh (gen_random_uuid), không gửi id từ client.
   Future<void> createRoom(RoomModel room) async {
-    await _supabase.from('rooms').insert(room.toMap());
+    final data = room.toMap()..remove('id');
+    await _supabase.from('rooms').insert(data);
   }
 
   /// Cập nhật thông tin phòng.
   Future<void> updateRoom(RoomModel room) async {
-    await _supabase.from('rooms').update(room.toMap()).eq('id', room.id);
+    final data = room.toMap()..remove('id');
+    await _supabase.from('rooms').update(data).eq('id', room.id);
   }
 
   /// Kiểm tra phòng có suất chiếu tương lai đã bán vé hay không (S24 Lock Check).
@@ -437,21 +447,34 @@ class ManagementRepository {
     required String role,
     required String cinemaId,
   }) async {
-    final response = await _supabase.functions.invoke('create-staff', body: {
-      'email': email,
-      'password': password,
-      'full_name': fullName,
-      'phone': phone,
-      'role': role,
-      'cinema_id': cinemaId,
-    });
+    try {
+      final response = await _supabase.functions.invoke('create-staff', body: {
+        'email': email,
+        'password': password,
+        'full_name': fullName,
+        'phone': phone,
+        'role': role,
+        'cinema_id': cinemaId,
+      });
 
-    if (response.status != 200) {
-      final error = response.data?['error'] ?? 'Lỗi tạo tài khoản nhân viên';
-      throw Exception(error);
+      if (response.status != 200) {
+        final error = response.data is Map ? response.data['error'] : null;
+        throw Exception(error ?? 'Lỗi tạo tài khoản nhân sự (Mã: ${response.status})');
+      }
+
+      return Map<String, dynamic>.from(response.data as Map);
+    } on FunctionException catch (fe) {
+      String msg = 'Lỗi tạo tài khoản nhân sự';
+      if (fe.details is Map && fe.details['error'] != null) {
+        msg = fe.details['error'].toString();
+      } else if (fe.reasonPhrase != null && fe.reasonPhrase!.isNotEmpty) {
+        msg = fe.reasonPhrase!;
+      }
+      throw Exception(msg);
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception(e.toString());
     }
-
-    return Map<String, dynamic>.from(response.data as Map);
   }
 
   /// Khóa / mở khóa tài khoản người dùng.

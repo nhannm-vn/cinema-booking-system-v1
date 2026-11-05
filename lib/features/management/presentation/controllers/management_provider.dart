@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/app_error_formatter.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../../booking/data/models/booking_model.dart';
 import '../../../booking/data/models/food_model.dart';
@@ -618,7 +619,7 @@ class ManagementProvider extends ChangeNotifier {
       await loadManagers();
       return true;
     } catch (e) {
-      _errorMessage = 'Tạo quản lý thất bại: ${e.toString()}';
+      _errorMessage = 'Tạo quản lý thất bại: ${AppErrorFormatter.format(e)}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -690,7 +691,7 @@ class ManagementProvider extends ChangeNotifier {
       await loadEmployees(cinemaId);
       return true;
     } catch (e) {
-      _errorMessage = 'Tạo nhân viên thất bại: ${e.toString()}';
+      _errorMessage = 'Tạo nhân viên thất bại: ${AppErrorFormatter.format(e)}';
       _isLoading = false;
       notifyListeners();
       return false;
