@@ -78,27 +78,6 @@ class ManagementMenuScreen extends StatelessWidget {
             subtitle: 'Tin nhắn trực tuyến hai chiều với khách hàng',
             route: AppRoutes.supportChat,
           ),
-          _buildMenuItem(
-            context,
-            icon: Icons.qr_code_scanner,
-            title: 'Lối tắt: Soát vé tại cửa (S18)',
-            subtitle: 'Quét QR và nhập mã soát vé',
-            route: AppRoutes.staffCheckin,
-          ),
-          _buildMenuItem(
-            context,
-            icon: Icons.fastfood_outlined,
-            title: 'Lối tắt: Quầy giao đồ ăn (S19)',
-            subtitle: 'Bảng theo dõi và giao bắp nước',
-            route: AppRoutes.staffFood,
-          ),
-          _buildMenuItem(
-            context,
-            icon: Icons.point_of_sale_outlined,
-            title: 'Lối tắt: Bán vé tại quầy (S20)',
-            subtitle: 'Chọn suất, chọn ghế và xuất vé tại quầy POS',
-            route: AppRoutes.staffCounterShowtimes,
-          ),
 
           const SizedBox(height: AppSpacing.lg),
 

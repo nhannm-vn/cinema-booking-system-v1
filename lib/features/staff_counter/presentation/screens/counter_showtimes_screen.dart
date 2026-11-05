@@ -41,7 +41,11 @@ class _CounterShowtimesScreenState extends State<CounterShowtimesScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final auth = context.read<AuthProvider>();
-          final cinemaId = auth.currentUser?.cinemaId ?? 'cn_q1';
+          final user = auth.currentUser;
+          if (user != null && (user.role == UserRole.manager || user.role == UserRole.admin)) {
+            return;
+          }
+          final cinemaId = user?.cinemaId ?? 'cn_q1';
           context.read<StaffCounterProvider>().loadShowtimes(cinemaId, DateTime.now());
         }
       });
@@ -71,6 +75,49 @@ class _CounterShowtimesScreenState extends State<CounterShowtimesScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
+
+    if (user != null && (user.role == UserRole.manager || user.role == UserRole.admin)) {
+      return Scaffold(
+        backgroundColor: AppColors.canvas,
+        appBar: AppBar(
+          backgroundColor: AppColors.canvas,
+          elevation: 0,
+          title: Text(
+            'BÁN VÉ TẠI QUẦY'.toUpperCase(),
+            style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.block, size: 64, color: AppColors.warning),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'KHÔNG CÓ QUYỀN TRUY CẬP'.toUpperCase(),
+                  style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Chức năng bán vé tại quầy chỉ dành cho tài khoản Nhân viên (Staff). Quản lý và Quản trị viên vui lòng sử dụng bàn làm việc vận hành.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMd.copyWith(color: AppColors.muted),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton.primary(
+                  label: 'VỀ BÀN LÀM VIỆC',
+                  onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.dashboard),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final cinemaName = auth.currentUser?.cinemaId?.toUpperCase() ?? 'RẠP CHIẾU';
     final counterProvider = context.watch<StaffCounterProvider>();
 
@@ -172,9 +219,7 @@ class _CounterShowtimesScreenState extends State<CounterShowtimesScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: auth.currentUser?.role == UserRole.manager || auth.currentUser?.role == UserRole.admin
-          ? null
-          : const StaffBottomNav(currentIndex: 2),
+      bottomNavigationBar: const StaffBottomNav(currentIndex: 2),
     );
   }
 

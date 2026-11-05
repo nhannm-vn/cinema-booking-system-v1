@@ -258,8 +258,8 @@ abstract final class AppRouter {
         String bookingCode = '';
         String? txnRef;
         String bank = 'MBBank';
-        String accountNo = '0000123456789';
-        String accountName = 'CINEMA BOOKING SYSTEM';
+        String accountNo = '0000000002';
+        String accountName = 'NGUYEN VAN KHACH 1';
         int amount = 0;
         if (settings.arguments is Map) {
           final map = settings.arguments as Map;
@@ -267,8 +267,8 @@ abstract final class AppRouter {
           bookingCode = (map['bookingCode'] as String?) ?? '';
           txnRef = map['txnRef'] as String?;
           bank = (map['bank'] as String?) ?? 'MBBank';
-          accountNo = (map['accountNo'] as String?) ?? '0000123456789';
-          accountName = (map['accountName'] as String?) ?? 'CINEMA BOOKING SYSTEM';
+          accountNo = (map['accountNo'] as String?) ?? '0000000002';
+          accountName = (map['accountName'] as String?) ?? 'NGUYEN VAN KHACH 1';
           amount = (map['amount'] as int?) ?? 0;
         }
         return MaterialPageRoute(

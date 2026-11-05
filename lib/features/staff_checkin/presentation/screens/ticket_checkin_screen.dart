@@ -167,6 +167,49 @@ class _TicketCheckinScreenState extends State<TicketCheckinScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
+
+    if (user != null && (user.role == UserRole.manager || user.role == UserRole.admin)) {
+      return Scaffold(
+        backgroundColor: AppColors.canvas,
+        appBar: AppBar(
+          backgroundColor: AppColors.canvas,
+          elevation: 0,
+          title: Text(
+            'SOÁT VÉ VÀO RẠP'.toUpperCase(),
+            style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.block, size: 64, color: AppColors.warning),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'KHÔNG CÓ QUYỀN TRUY CẬP'.toUpperCase(),
+                  style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Chức năng soát vé chỉ dành cho tài khoản Nhân viên (Staff). Quản lý và Quản trị viên vui lòng sử dụng bàn làm việc vận hành.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMd.copyWith(color: AppColors.muted),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton.primary(
+                  label: 'VỀ BÀN LÀM VIỆC',
+                  onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.dashboard),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final cinemaName = auth.currentUser?.cinemaId?.toUpperCase() ?? 'RẠP CHIẾU';
 
     return Scaffold(
@@ -206,9 +249,7 @@ class _TicketCheckinScreenState extends State<TicketCheckinScreen> {
         ],
       ),
       body: _isDesktop ? _buildDesktopFallback(context) : _buildCameraScanner(context),
-      bottomNavigationBar: auth.currentUser?.role == UserRole.manager || auth.currentUser?.role == UserRole.admin
-          ? null
-          : const StaffBottomNav(currentIndex: 0),
+      bottomNavigationBar: const StaffBottomNav(currentIndex: 0),
     );
   }
 
