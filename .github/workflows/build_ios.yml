@@ -44,13 +44,15 @@ jobs:
       - name: 🔍 Kiểm tra phiên bản Flutter
         run: flutter --version
 
-      - name: 📦 Cài đặt Flutter dependencies
-        run: flutter pub get
+      - name: 📦 Cài đặt Flutter dependencies & iOS Engine
+        run: |
+          flutter precache --ios
+          flutter pub get
 
       - name: 🍎 Cài đặt CocoaPods dependencies
         run: |
           cd ios
-          pod install --repo-update || pod install
+          pod install
           cd ..
 
       - name: 🔐 Cấu hình Chứng chỉ Apple (Chỉ khi chọn Signed & có Secrets)
