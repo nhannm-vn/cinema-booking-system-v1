@@ -1,0 +1,127 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Chế độ build (unsigned: miễn phí, cài qua Sideloadly/AltStore | signed: Apple Developer Account)'
+        required: true
+        default: 'unsigned'
+        type: choice
+        options:
+          - unsigned
+          - signed
+      flutter_channel:
+        description: 'Flutter Channel (stable/beta)'
+        required: false
+        default: 'stable'
+  push:
+    tags:
+      - 'v*' # Tự động build và tạo Release khi gắn tag version (ví dụ: v1.0.0)
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ github.event.inputs.flutter_channel || 'stable' }}
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      - name: 🔍 Kiểm tra phiên bản Flutter & Xcode
+        run: |
+          flutter --version
+          xcodebuild -version
+
+      - name: 📦 Cài đặt Flutter dependencies
+        run: flutter pub get
+
+      - name: 🍎 Cài đặt CocoaPods dependencies
+        run: |
+          cd ios
+          pod install --repo-update || pod install
+          cd ..
+
+      - name: 🔐 Cấu hình Chứng chỉ Apple (Chỉ khi chọn Signed & có Secrets)
+        if: ${{ (github.event.inputs.build_type == 'signed' || startsWith(github.ref, 'refs/tags/')) && env.APPLE_CERTIFICATE_BASE64 != '' }}
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          echo "Thiết lập Apple Certificate và Provisioning Profile..."
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 12)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          CERT_PATH=$RUNNER_TEMP/cert.p12
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > $CERT_PATH
+          security import $CERT_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+          echo "Đã cài đặt Chứng chỉ và Provisioning Profile thành công!"
+
+      - name: 🚀 Build iOS IPA
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BUILD_TYPE: ${{ github.event.inputs.build_type || 'unsigned' }}
+          HAS_CERT: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' }}
+        run: |
+          # Chuẩn bị cờ compile-time cho Supabase nếu có trong secrets
+          DART_DEFINES=""
+          if [ -n "$SUPABASE_URL" ]; then
+            DART_DEFINES="$DART_DEFINES --dart-define=SUPABASE_URL=$SUPABASE_URL"
+          fi
+          if [ -n "$SUPABASE_ANON_KEY" ]; then
+            DART_DEFINES="$DART_DEFINES --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+          fi
+
+          if [ "$BUILD_TYPE" = "signed" ] && [ "$HAS_CERT" = "true" ]; then
+            echo "--- BẮT ĐẦU BUILD SIGNED IPA (Apple Developer) ---"
+            flutter build ipa --release --export-options-plist=ios/ExportOptions.plist $DART_DEFINES
+            cp build/ios/ipa/*.ipa cinema_booking_v1.ipa
+          else
+            echo "--- BẮT ĐẦU BUILD UNSIGNED IPA (No Codesign) ---"
+            flutter build ios --release --no-codesign $DART_DEFINES
+
+            echo "Đóng gói Payload thành file .ipa..."
+            mkdir -p build/ios/payload_ipa/Payload
+            cp -R build/ios/iphoneos/Runner.app build/ios/payload_ipa/Payload/
+            cd build/ios/payload_ipa
+            zip -r ../../../cinema_booking_v1.ipa Payload
+            cd ../../..
+          fi
+
+          echo "Kiểm tra file IPA đã tạo:"
+          ls -lh cinema_booking_v1.ipa
+
+      - name: 📤 Tải file IPA lên GitHub Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinema-booking-ipa
+          path: cinema_booking_v1.ipa
+          retention-days: 14
+
+      - name: 🏷️ Tạo GitHub Release (Khi push Git tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: cinema_booking_v1.ipa
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
