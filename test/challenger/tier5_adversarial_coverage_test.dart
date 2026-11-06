@@ -214,6 +214,14 @@ class MockAdversarialTicketRepo implements TicketRepository {
     lastCancelledCode = code;
     tickets.removeWhere((t) => t.code == code);
   }
+
+  @override
+  Future<void> requestRefund(String code, {String? reason}) async {
+    lastCancelledCode = code;
+  }
+
+  @override
+  Future<String?> getRefundRequestStatus(String code) async => null;
 }
 
 class MockAdversarialNotifRepo implements NotificationRepository {

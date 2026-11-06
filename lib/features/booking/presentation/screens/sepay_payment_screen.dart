@@ -28,8 +28,8 @@ class SepayPaymentScreen extends StatefulWidget {
     required this.bookingCode,
     this.txnRef,
     this.bank = 'MBBank',
-    this.accountNo = '0000123456789',
-    this.accountName = 'CINEMA BOOKING SYSTEM',
+    this.accountNo = '0000000002',
+    this.accountName = 'NGUYEN VAN KHACH 1',
     this.amount = 0,
   });
 

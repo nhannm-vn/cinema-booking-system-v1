@@ -36,6 +36,7 @@ import '../../features/management/presentation/screens/managers_management_scree
 import '../../features/management/presentation/screens/movies_management_screen.dart';
 import '../../features/management/presentation/screens/operational_dashboard_screen.dart';
 import '../../features/management/presentation/screens/pricing_settings_screen.dart';
+import '../../features/management/presentation/screens/refund_requests_screen.dart';
 import '../../features/management/presentation/screens/seat_map_designer_screen.dart';
 import '../../features/management/presentation/screens/showtimes_management_screen.dart';
 import '../../features/management/presentation/screens/vouchers_management_screen.dart';
@@ -95,6 +96,7 @@ abstract final class AppRoutes {
   static const String manageVouchers = '/management/vouchers'; // S27
   static const String manageManagers = '/management/managers'; // S28
   static const String auditLogs = '/management/audit-logs'; // S29
+  static const String refundRequests = '/management/refund-requests';
 }
 
 /// Central application route generator.
@@ -258,8 +260,8 @@ abstract final class AppRouter {
         String bookingCode = '';
         String? txnRef;
         String bank = 'MBBank';
-        String accountNo = '0000123456789';
-        String accountName = 'CINEMA BOOKING SYSTEM';
+        String accountNo = '0000000002';
+        String accountName = 'NGUYEN VAN KHACH 1';
         int amount = 0;
         if (settings.arguments is Map) {
           final map = settings.arguments as Map;
@@ -267,8 +269,8 @@ abstract final class AppRouter {
           bookingCode = (map['bookingCode'] as String?) ?? '';
           txnRef = map['txnRef'] as String?;
           bank = (map['bank'] as String?) ?? 'MBBank';
-          accountNo = (map['accountNo'] as String?) ?? '0000123456789';
-          accountName = (map['accountName'] as String?) ?? 'CINEMA BOOKING SYSTEM';
+          accountNo = (map['accountNo'] as String?) ?? '0000000002';
+          accountName = (map['accountName'] as String?) ?? 'NGUYEN VAN KHACH 1';
           amount = (map['amount'] as int?) ?? 0;
         }
         return MaterialPageRoute(
@@ -494,6 +496,12 @@ abstract final class AppRouter {
       case AppRoutes.auditLogs:
         return MaterialPageRoute(
           builder: (_) => const AuditLogsScreen(),
+          settings: settings,
+        );
+
+      case AppRoutes.refundRequests:
+        return MaterialPageRoute(
+          builder: (_) => const RefundRequestsScreen(),
           settings: settings,
         );
 

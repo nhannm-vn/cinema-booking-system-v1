@@ -3,8 +3,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const bank = Deno.env.get('SEPAY_BANK') || 'MBBank';
-const accountNo = Deno.env.get('SEPAY_ACCOUNT_NO') || '0000123456789';
-const accountName = Deno.env.get('SEPAY_ACCOUNT_NAME') || 'CINEMA BOOKING SYSTEM';
+const accountNo = Deno.env.get('SEPAY_ACCOUNT_NO') || '0000000002';
+const accountName = Deno.env.get('SEPAY_ACCOUNT_NAME') || 'NGUYEN VAN KHACH 1';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

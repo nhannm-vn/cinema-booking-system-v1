@@ -440,7 +440,7 @@ Ví dụ khung `create-sepay-url`:
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const bank = Deno.env.get('SEPAY_BANK') || 'MBBank';
-const accountNo = Deno.env.get('SEPAY_ACCOUNT_NO') || '0000123456789';
+const accountNo = Deno.env.get('SEPAY_ACCOUNT_NO') || '0000000002';
 
 Deno.serve(async (req) => {
   const auth = req.headers.get('Authorization') ?? '';

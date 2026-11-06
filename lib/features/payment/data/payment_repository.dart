@@ -31,13 +31,13 @@ class PaymentRepository {
 
     // Default VietQR format via SePay service
     final qrUrl =
-        'https://qr.sepay.vn/img?bank=MBBank&acc=0000123456789&template=compact&amount=0&des=$bookingCode';
+        'https://qr.sepay.vn/img?bank=MBBank&acc=0000000002&template=compact&amount=0&des=$bookingCode';
     return {
       'url': qrUrl,
       'qr_url': qrUrl,
       'bank': 'MBBank',
-      'account_no': '0000123456789',
-      'account_name': 'CINEMA BOOKING SYSTEM',
+      'account_no': '0000000002',
+      'account_name': 'NGUYEN VAN KHACH 1',
       'content': bookingCode,
       'txn_ref': txnRef,
     };

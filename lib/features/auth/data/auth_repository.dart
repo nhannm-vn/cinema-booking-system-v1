@@ -25,7 +25,15 @@ class AuthRepository {
           .eq('id', user.id)
           .maybeSingle();
 
-      if (data == null) return null;
+      if (data == null) {
+        return AppUser(
+          id: user.id,
+          fullName: (user.userMetadata?['full_name'] as String?) ?? '',
+          phone: user.userMetadata?['phone'] as String?,
+          role: UserRole.customer,
+          email: user.email,
+        );
+      }
       final profile = AppUser.fromMap(data, email: user.email);
       if (profile.isLocked) {
         await signOut();
@@ -52,20 +60,32 @@ class AuthRepository {
       throw Exception('Đăng nhập thất bại.');
     }
 
-    final data = await _supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single();
+    try {
+      final data = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
 
-    final profile = AppUser.fromMap(data, email: user.email);
-
-    if (profile.isLocked) {
-      await signOut();
-      throw Exception('Tài khoản đã bị khóa.');
+      if (data != null) {
+        final profile = AppUser.fromMap(data, email: user.email);
+        if (profile.isLocked) {
+          await signOut();
+          throw Exception('Tài khoản đã bị khóa. Vui lòng liên hệ ban quản lý.');
+        }
+        return profile;
+      }
+    } catch (e) {
+      if (e.toString().contains('Tài khoản đã bị khóa')) rethrow;
     }
 
-    return profile;
+    return AppUser(
+      id: user.id,
+      fullName: (user.userMetadata?['full_name'] as String?) ?? '',
+      phone: user.userMetadata?['phone'] as String?,
+      role: UserRole.customer,
+      email: user.email,
+    );
   }
 
   /// Sign up a new customer account.
@@ -75,34 +95,79 @@ class AuthRepository {
     required String fullName,
     String? phone,
   }) async {
+    final metadata = <String, dynamic>{
+      'full_name': fullName,
+    };
+    if (phone != null && phone.isNotEmpty) {
+      metadata['phone'] = phone;
+    }
+
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
-      data: {
-        'full_name': fullName,
-      },
+      data: metadata,
     );
 
     final user = response.user;
     if (user == null) {
-      throw Exception('Đăng ký thất bại.');
+      throw Exception('Đăng ký không thành công. Vui lòng kiểm tra lại thông tin.');
+    }
+    if (user.identities != null && user.identities!.isEmpty) {
+      throw Exception('Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.');
     }
 
-    // Update phone if provided
-    if (phone != null && phone.isNotEmpty) {
-      await _supabase
-          .from('profiles')
-          .update({'phone': phone})
-          .eq('id', user.id);
+    // 1. Trường hợp có session ngay lập tức
+    if (response.session != null) {
+      if (phone != null && phone.isNotEmpty) {
+        try {
+          await _supabase
+              .from('profiles')
+              .update({'phone': phone})
+              .eq('id', user.id);
+        } catch (_) {}
+      }
+
+      try {
+        final data = await _supabase
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (data != null) {
+          return AppUser.fromMap(data, email: user.email);
+        }
+      } catch (_) {}
+
+      return AppUser(
+        id: user.id,
+        fullName: fullName,
+        phone: phone,
+        role: UserRole.customer,
+        email: user.email,
+      );
     }
 
-    final data = await _supabase
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single();
+    // 2. Trường hợp session == null (do Supabase Auth bật xác nhận email hoặc chưa tự sinh session)
+    try {
+      final loggedIn = await signIn(email: email, password: password);
+      return loggedIn;
+    } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (errStr.contains('email not confirmed') || errStr.contains('confirm')) {
+        throw Exception(
+          'Đăng ký tài khoản thành công! Vui lòng kiểm tra email của bạn để xác thực tài khoản trước khi đăng nhập.',
+        );
+      }
 
-    return AppUser.fromMap(data, email: user.email);
+      return AppUser(
+        id: user.id,
+        fullName: fullName,
+        phone: phone,
+        role: UserRole.customer,
+        email: user.email,
+      );
+    }
   }
 
   /// Update customer profile (full_name, phone).
@@ -121,9 +186,19 @@ class AuthRepository {
         })
         .eq('id', user.id)
         .select()
-        .single();
+        .maybeSingle();
 
-    return AppUser.fromMap(data, email: user.email);
+    if (data != null) {
+      return AppUser.fromMap(data, email: user.email);
+    }
+
+    return AppUser(
+      id: user.id,
+      fullName: fullName,
+      phone: phone,
+      role: UserRole.customer,
+      email: user.email,
+    );
   }
 
   /// Sign out.

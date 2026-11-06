@@ -74,9 +74,11 @@ class _CinemaDetailScreenState extends State<CinemaDetailScreen> {
   }
 
   Future<void> _openMapDirections(CinemaModel cinema) async {
-    final destination = Uri.encodeComponent('${cinema.name}, ${cinema.address}');
+    final destination = cinema.address.trim().isNotEmpty
+        ? Uri.encodeComponent(cinema.address.trim())
+        : (cinema.lat != 0 && cinema.lng != 0 ? '${cinema.lat},${cinema.lng}' : Uri.encodeComponent(cinema.name));
     final url =
-        'https://www.google.com/maps/dir/?api=1&destination=$destination';
+        'https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving';
     final uri = Uri.parse(url);
 
     if (await canLaunchUrl(uri)) {

@@ -2,7 +2,7 @@
 /// References: TECH_STACK.md Section 4 & BUSINESS_RULES.md Section 9
 class FoodModel {
   final String id;
-  final String cinemaId;
+  final String? cinemaId; // null = món toàn hệ thống (Admin tạo)
   final String name;
   final String category; // 'combo', 'popcorn', 'drink', 'snack'
   final int price;
@@ -13,7 +13,7 @@ class FoodModel {
 
   const FoodModel({
     required this.id,
-    required this.cinemaId,
+    this.cinemaId,
     required this.name,
     required this.category,
     required this.price,
@@ -50,7 +50,7 @@ class FoodModel {
   factory FoodModel.fromMap(Map<String, dynamic> map, {int quantity = 0}) {
     return FoodModel(
       id: map['id'] as String,
-      cinemaId: map['cinema_id'] as String,
+      cinemaId: map['cinema_id'] as String?,
       name: map['name'] as String,
       category: (map['category'] as String?) ?? 'combo',
       price: map['price'] as int,

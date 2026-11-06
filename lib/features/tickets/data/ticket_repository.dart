@@ -42,4 +42,24 @@ class TicketRepository {
       'p_reason': reason,
     });
   }
+
+  /// Gửi yêu cầu hoàn vé lên Admin (≥ 2 giờ trước giờ chiếu).
+  Future<void> requestRefund(String code, {String? reason}) async {
+    await _supabase.rpc('request_refund', params: {
+      'p_booking_code': code,
+      'p_reason': reason,
+    });
+  }
+
+  /// Trạng thái yêu cầu hoàn vé mới nhất của một vé (pending / completed / rejected), null nếu chưa gửi.
+  Future<String?> getRefundRequestStatus(String code) async {
+    final response = await _supabase
+        .from('refund_requests')
+        .select('status')
+        .eq('booking_code', code)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    return response?['status'] as String?;
+  }
 }

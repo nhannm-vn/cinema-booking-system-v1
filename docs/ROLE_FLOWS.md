@@ -332,10 +332,10 @@ Có toàn bộ quyền Manager, cộng thêm:
 | S16 Menu đồ ăn | | | | ✔ | ✔ |
 | S17 Rạp (bản đồ) | ✔ | ✔ | | | |
 | S17B Chi tiết rạp | ✔ | ✔ | | | |
-| S18 Soát vé | | | ✔ | ✔ | |
-| S19 Quầy đồ ăn | | | ✔ | ✔ | |
-| S20 Bán vé quầy | | | ✔ | ✔ | |
-| S21 Thanh toán quầy | | | ✔ | ✔ | |
+| S18 Soát vé | | | ✔ | | |
+| S19 Quầy đồ ăn | | | ✔ | | |
+| S20 Bán vé quầy | | | ✔ | | |
+| S21 Thanh toán quầy | | | ✔ | | |
 | S22 Tổng quan | | | | ✔ | ✔ |
 | S23 Nhân viên | | | | ✔ | ✔ |
 | S24 Sơ đồ ghế | | | | | ✔ |

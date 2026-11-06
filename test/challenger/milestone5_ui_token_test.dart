@@ -1023,9 +1023,9 @@ void main() {
       expect(find.text('7 NGÀY'), findsOneWidget);
       expect(find.text('THÁNG NÀY'), findsOneWidget);
       expect(find.text('LẬP SUẤT'), findsOneWidget);
-      expect(find.text('BÁN QUẦY'), findsOneWidget);
-      expect(find.text('SOÁT VÉ'), findsOneWidget);
       expect(find.text('ĐƠN VÉ'), findsOneWidget);
+      expect(find.text('NHÂN SỰ'), findsOneWidget);
+      expect(find.text('MENU BẮP'), findsOneWidget);
 
       verifyAllStrictTokens(tester);
     });

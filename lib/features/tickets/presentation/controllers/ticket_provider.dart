@@ -57,4 +57,34 @@ class TicketProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Gửi yêu cầu hoàn vé lên Admin.
+  Future<bool> requestRefund(String code, {String? reason}) async {
+    _errorMessage = null;
+    try {
+      await _repo.requestRefund(code, reason: reason);
+      return true;
+    } catch (e) {
+      final raw = e.toString();
+      if (raw.contains('REFUND_ALREADY_REQUESTED')) {
+        _errorMessage = 'Vé này đã có yêu cầu hoàn đang chờ xử lý.';
+      } else if (raw.contains('CANNOT_CANCEL_LESS_THAN_2_HOURS')) {
+        _errorMessage = 'Chỉ được hủy vé trước giờ chiếu ít nhất 2 giờ.';
+      } else if (raw.contains('NOT_PAID')) {
+        _errorMessage = 'Chỉ vé đã thanh toán mới được yêu cầu hoàn.';
+      } else {
+        _errorMessage = 'Không thể gửi yêu cầu hoàn vé. Vui lòng thử lại.';
+      }
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<String?> getRefundRequestStatus(String code) async {
+    try {
+      return await _repo.getRefundRequestStatus(code);
+    } catch (_) {
+      return null;
+    }
+  }
 }

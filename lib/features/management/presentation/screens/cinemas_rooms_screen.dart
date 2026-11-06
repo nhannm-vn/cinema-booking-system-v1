@@ -417,7 +417,7 @@ class _RoomFormSheetState extends State<_RoomFormSheet> {
     final isEditing = widget.room != null;
     final rows = int.tryParse(_rowsController.text.trim()) ?? 8;
     final cols = int.tryParse(_colsController.text.trim()) ?? 10;
-    final id = widget.room?.id ?? 'room_${DateTime.now().millisecondsSinceEpoch}';
+    final id = widget.room?.id ?? '';
 
     List<String> layout = widget.room?.seatLayout ?? [];
     if (layout.isEmpty) {

@@ -54,8 +54,60 @@ abstract final class RouteGuards {
       AppRoutes.manageVouchers,
       AppRoutes.manageManagers,
       AppRoutes.auditLogs,
+      AppRoutes.refundRequests,
     ];
 
     return protectedRoutes.contains(route);
+  }
+
+  /// Check if a user's role has permission to access a specific route.
+  /// Enforces strict separation between Staff operational routes and Manager/Admin management routes.
+  static bool canAccessRoute(AppUser? user, String route) {
+    if (user == null) {
+      return !requiresAuth(route);
+    }
+
+    if (user.isLocked) return false;
+
+    // Staff-only routes
+    const staffRoutes = [
+      AppRoutes.staffCheckin,
+      AppRoutes.staffFood,
+      AppRoutes.staffCounterShowtimes,
+      AppRoutes.staffCounterPayment,
+    ];
+    if (staffRoutes.contains(route)) {
+      return user.role == UserRole.staff;
+    }
+
+    // Manager and Admin shared management routes
+    const managerRoutes = [
+      AppRoutes.managementHome,
+      AppRoutes.dashboard,
+      AppRoutes.manageMovies,
+      AppRoutes.manageShowtimes,
+      AppRoutes.manageBookings,
+      AppRoutes.manageFoods,
+      AppRoutes.manageEmployees,
+      AppRoutes.configPricing,
+    ];
+    if (managerRoutes.contains(route)) {
+      return user.role == UserRole.manager || user.role == UserRole.admin;
+    }
+
+    // Admin-only management routes
+    const adminRoutes = [
+      AppRoutes.manageRooms,
+      AppRoutes.configSeatMap,
+      AppRoutes.manageVouchers,
+      AppRoutes.manageManagers,
+      AppRoutes.auditLogs,
+      AppRoutes.refundRequests,
+    ];
+    if (adminRoutes.contains(route)) {
+      return user.role == UserRole.admin;
+    }
+
+    return true;
   }
 }

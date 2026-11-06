@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/routes/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/hold_timer.dart';
 import '../../../../shared/widgets/ticket_card.dart';
+import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/staff_counter_provider.dart';
 
 /// S21: Counter Payment & Change Calculator Screen (/staff/counter-payment)
@@ -224,6 +227,53 @@ class _CounterPaymentScreenState extends State<CounterPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AuthProvider? auth;
+    try {
+      auth = context.watch<AuthProvider>();
+    } catch (_) {}
+    final user = auth?.currentUser;
+
+    if (user != null && (user.role == UserRole.manager || user.role == UserRole.admin)) {
+      return Scaffold(
+        backgroundColor: AppColors.canvas,
+        appBar: AppBar(
+          backgroundColor: AppColors.canvas,
+          elevation: 0,
+          title: Text(
+            'THANH TOÁN TẠI QUẦY'.toUpperCase(),
+            style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.block, size: 64, color: AppColors.warning),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'KHÔNG CÓ QUYỀN TRUY CẬP'.toUpperCase(),
+                  style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Chức năng thanh toán tại quầy chỉ dành cho tài khoản Nhân viên (Staff).',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMd.copyWith(color: AppColors.muted),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                AppButton.primary(
+                  label: 'VỀ BÀN LÀM VIỆC',
+                  onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.dashboard),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final counter = context.watch<StaffCounterProvider>();
     final showtime = counter.selectedShowtime;
     final totalAmount = counter.calculateTotal();

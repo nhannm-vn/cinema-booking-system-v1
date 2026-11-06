@@ -605,6 +605,16 @@ class _AddShowtimeSheetState extends State<_AddShowtimeSheet> {
 
     final provider = context.read<ManagementProvider>();
 
+    if (!_startDateTime.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể tạo suất chiếu trong quá khứ. Vui lòng chọn ngày giờ sau thời điểm hiện tại.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     // Client-side 15-minute gap pre-check
     if (_hasConflictWith(provider.showtimes)) {
       ScaffoldMessenger.of(context).showSnackBar(

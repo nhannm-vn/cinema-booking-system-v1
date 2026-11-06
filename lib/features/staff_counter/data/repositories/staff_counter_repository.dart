@@ -92,7 +92,7 @@ class StaffCounterRepository {
       final response = await _supabase
           .from('foods')
           .select()
-          .eq('cinema_id', cinemaId)
+          .or('cinema_id.eq.$cinemaId,cinema_id.is.null')
           .eq('is_available', true)
           .order('price', ascending: true);
       return List<Map<String, dynamic>>.from(response as List);

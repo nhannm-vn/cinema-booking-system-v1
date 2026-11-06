@@ -352,23 +352,23 @@ class _OperationalDashboardScreenState extends State<OperationalDashboardScreen>
         const SizedBox(width: AppSpacing.xs),
         _buildActionTile(
           context,
-          icon: Icons.point_of_sale,
-          label: 'BÁN QUẦY',
-          route: AppRoutes.staffCounterShowtimes,
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        _buildActionTile(
-          context,
-          icon: Icons.qr_code_scanner,
-          label: 'SOÁT VÉ',
-          route: AppRoutes.staffCheckin,
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        _buildActionTile(
-          context,
           icon: Icons.receipt_long,
           label: 'ĐƠN VÉ',
           route: AppRoutes.manageBookings,
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        _buildActionTile(
+          context,
+          icon: Icons.badge_outlined,
+          label: 'NHÂN SỰ',
+          route: AppRoutes.manageEmployees,
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        _buildActionTile(
+          context,
+          icon: Icons.lunch_dining_outlined,
+          label: 'MENU BẮP',
+          route: AppRoutes.manageFoods,
         ),
       ],
     );

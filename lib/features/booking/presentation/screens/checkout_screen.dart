@@ -120,8 +120,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'bookingCode': booking.currentBookingCode!,
           'txnRef': txnRef,
           'bank': paymentData['bank'] ?? 'MBBank',
-          'accountNo': paymentData['account_no'] ?? '0000123456789',
-          'accountName': paymentData['account_name'] ?? 'CINEMA BOOKING SYSTEM',
+          'accountNo': paymentData['account_no'] ?? '0000000002',
+          'accountName': paymentData['account_name'] ?? 'NGUYEN VAN KHACH 1',
           'amount': booking.calculateGrandTotal(),
         },
       );
