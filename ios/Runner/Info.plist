@@ -70,5 +70,12 @@
 	<string>Ứng dụng cần sử dụng máy ảnh để quét mã QR vé và check-in.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ứng dụng cần truy cập vị trí của bạn để tìm cụm rạp chiếu phim gần nhất.</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>comgooglemaps</string>
+		<string>maps</string>
+	</array>
 </dict>
 </plist>

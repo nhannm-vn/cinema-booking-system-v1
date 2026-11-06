@@ -84,16 +84,20 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
           BUILD_TYPE: ${{ github.event.inputs.build_type || 'unsigned' }}
           HAS_CERT: ${{ secrets.APPLE_CERTIFICATE_BASE64 != '' }}
         run: |
-          # Chuẩn bị cờ compile-time cho Supabase nếu có trong secrets
+          # Chuẩn bị cờ compile-time cho Supabase & Google Maps nếu có trong secrets
           DART_DEFINES=""
           if [ -n "$SUPABASE_URL" ]; then
             DART_DEFINES="$DART_DEFINES --dart-define=SUPABASE_URL=$SUPABASE_URL"
           fi
           if [ -n "$SUPABASE_ANON_KEY" ]; then
             DART_DEFINES="$DART_DEFINES --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY"
+          fi
+          if [ -n "$GOOGLE_MAPS_API_KEY" ]; then
+            DART_DEFINES="$DART_DEFINES --dart-define=GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY"
           fi
 
           if [ "$BUILD_TYPE" = "signed" ] && [ "$HAS_CERT" = "true" ]; then
