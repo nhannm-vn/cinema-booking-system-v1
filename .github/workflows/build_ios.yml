@@ -16,6 +16,8 @@ on:
         required: false
         default: 'stable'
   push:
+    branches:
+      - config
     tags:
       - 'v*' # Tự động build và tạo Release khi gắn tag version (ví dụ: v1.0.0)
 
