@@ -636,13 +636,20 @@ class ManagementProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleManagerLock(String managerId, bool isLocked) async {
+  Future<bool> toggleManagerLock(String managerId, bool isLocked) async {
     try {
       await _repo.toggleUserLock(managerId, isLocked);
+      final idx = _managers.indexWhere((m) => m.id == managerId);
+      if (idx != -1) {
+        _managers[idx] = _managers[idx].copyWith(isLocked: isLocked);
+        notifyListeners();
+      }
       await loadManagers();
+      return true;
     } catch (e) {
       _errorMessage = 'Không thể đổi trạng thái khóa: ${e.toString()}';
       notifyListeners();
+      return false;
     }
   }
 
