@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_badge.dart';
@@ -475,9 +476,21 @@ class _ShowtimesManagementScreenState extends State<ShowtimesManagementScreen> {
             ),
             const SizedBox(height: AppSpacing.xxs),
 
-            Text(
-              '${showtime.roomName ?? 'Phòng'} · Rạp ${showtime.cinemaName ?? _activeCinemaId.toUpperCase()}',
-              style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${showtime.roomName ?? 'Phòng'} · Rạp ${showtime.cinemaName ?? _activeCinemaId.toUpperCase()}',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.muted),
+                ),
+                Text(
+                  'TỪ ${CurrencyFormatter.format(showtime.minPrice)}',
+                  style: AppTextStyles.captionUppercase.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.xs),
 
