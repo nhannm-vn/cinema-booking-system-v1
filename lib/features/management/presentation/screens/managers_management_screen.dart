@@ -81,14 +81,24 @@ class _ManagersManagementScreenState extends State<ManagersManagementScreen> {
             onPressed: () async {
               Navigator.pop(dialogCtx);
               final messenger = ScaffoldMessenger.of(context);
-              await context.read<ManagementProvider>().toggleManagerLock(manager.id, willLock);
+              final mgmt = context.read<ManagementProvider>();
+              final success = await mgmt.toggleManagerLock(manager.id, willLock);
               if (!mounted) return;
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(willLock ? 'Đã khóa tài khoản quản lý' : 'Đã mở khóa tài khoản quản lý'),
-                  backgroundColor: willLock ? AppColors.warning : AppColors.success,
-                ),
-              );
+              if (success) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(willLock ? 'ĐÃ KHÓA TÀI KHOẢN QUẢN LÝ' : 'ĐÃ MỞ KHÓA TÀI KHOẢN QUẢN LÝ'),
+                    backgroundColor: willLock ? AppColors.warning : AppColors.success,
+                  ),
+                );
+              } else {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(mgmt.errorMessage ?? 'KHÔNG THỂ THAY ĐỔI TRẠNG THÁI KHÓA'),
+                    backgroundColor: AppColors.warning,
+                  ),
+                );
+              }
             },
             child: Text(
               (willLock ? 'KHÓA TÀI KHOẢN' : 'MỞ KHÓA').toUpperCase(),
