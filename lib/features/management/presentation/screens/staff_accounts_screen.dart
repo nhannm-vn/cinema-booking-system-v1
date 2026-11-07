@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/routes/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -11,7 +10,6 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../auth/presentation/controllers/auth_provider.dart';
 import '../controllers/management_provider.dart';
@@ -419,10 +417,6 @@ class _StaffAccountsScreenState extends State<StaffAccountsScreen> {
             tooltip: 'Thêm nhân viên',
             icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
             onPressed: () => _showAddStaffModal(context, _activeCinemaId),
-          ),
-          NotificationBadge(
-            unreadCount: 0,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
           ),
           const SizedBox(width: AppSpacing.xxs),
         ],

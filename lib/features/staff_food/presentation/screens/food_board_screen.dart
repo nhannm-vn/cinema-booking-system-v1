@@ -10,7 +10,6 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../../shared/widgets/staff_bottom_nav.dart';
 import '../../../../shared/widgets/status_badge.dart';
@@ -194,13 +193,6 @@ class _FoodBoardScreenState extends State<FoodBoardScreen> {
             ),
           ],
         ),
-        actions: [
-          NotificationBadge(
-            unreadCount: 0,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
-          ),
-          const SizedBox(width: AppSpacing.xxs),
-        ],
       ),
       body: Column(
         children: [
