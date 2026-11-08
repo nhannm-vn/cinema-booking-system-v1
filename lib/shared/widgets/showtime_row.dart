@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/currency_formatter.dart';
+import 'app_badge.dart';
 
 /// Showtime Row component following DESIGN_TOKENS.md Section 7.4
 class ShowtimeRow extends StatelessWidget {
@@ -26,7 +27,7 @@ class ShowtimeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = isSoldOut ? AppColors.muted : AppColors.ink;
-    final subtextColor = isSoldOut ? AppColors.muted : AppColors.body;
+    final badgeTextColor = isSoldOut ? AppColors.muted : AppColors.ink;
 
     return InkWell(
       onTap: isSoldOut ? null : onTap,
@@ -61,9 +62,9 @@ class ShowtimeRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: AppSpacing.xxxs),
-                  Text(
-                    format.toUpperCase(),
-                    style: AppTextStyles.captionUppercase.copyWith(color: subtextColor),
+                  AppBadge.format(
+                    format,
+                    textColor: badgeTextColor,
                   ),
                 ],
               ),
@@ -79,7 +80,10 @@ class ShowtimeRow extends StatelessWidget {
             else
               Text(
                 'từ ${CurrencyFormatter.format(minPrice)}',
-                style: AppTextStyles.bodyMd.copyWith(color: AppColors.ink),
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.ink,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
           ],
         ),

@@ -47,11 +47,11 @@ class AppBadge extends StatelessWidget {
   }
 
   /// Factory for Format badges: 2D, 3D, IMAX
-  factory AppBadge.format(String format) {
+  factory AppBadge.format(String format, {Color? backgroundColor, Color? textColor}) {
     return AppBadge(
       label: format.toUpperCase(),
-      backgroundColor: AppColors.canvasElevated,
-      textColor: AppColors.ink,
+      backgroundColor: backgroundColor ?? AppColors.canvasElevated,
+      textColor: textColor ?? AppColors.ink,
     );
   }
 

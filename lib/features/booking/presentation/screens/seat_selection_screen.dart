@@ -249,7 +249,7 @@ class _SeatSelectionScreenState extends State<SeatSelectionScreen> {
 
     final String title = showtime?.movieTitle ?? 'CHỌN GHẾ';
     final String subtitle = showtime != null
-        ? '${showtime.cinemaName ?? ""} · ${showtime.roomName ?? ""} · ${DateFormatter.formatTime(showtime.startTime)}'
+        ? '${showtime.cinemaName ?? ""} · ${showtime.roomName ?? ""} · ${DateFormatter.formatTime(showtime.startTime)} · ${showtime.format}'
         : '';
 
     final selectedCount = booking.selectedSeatIds.length;

@@ -9,7 +9,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/app_user.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/qr_scanner_view.dart';
 import '../../../../shared/widgets/result_sheet.dart';
 import '../../../../shared/widgets/staff_bottom_nav.dart';
@@ -240,10 +239,6 @@ class _TicketCheckinScreenState extends State<TicketCheckinScreen> {
             tooltip: 'Nhập mã tay',
             icon: const Icon(Icons.keyboard_outlined, color: AppColors.ink),
             onPressed: () => _showManualInputDialog(context),
-          ),
-          NotificationBadge(
-            unreadCount: 0,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
           ),
           const SizedBox(width: AppSpacing.xxs),
         ],

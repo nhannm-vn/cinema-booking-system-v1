@@ -13,10 +13,7 @@ import '../../../../shared/widgets/customer_bottom_nav.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/movie_card.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
-import '../../../auth/presentation/controllers/auth_provider.dart';
-import '../../../notifications/presentation/controllers/notification_provider.dart';
 import '../../data/movie_model.dart';
 import '../controllers/movie_provider.dart';
 
@@ -42,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (movieProvider.nowShowing.isEmpty && movieProvider.upcoming.isEmpty) {
         movieProvider.loadMovies();
       }
-      final notifProvider = context.read<NotificationProvider>();
-      notifProvider.loadNotifications();
     });
   }
 
@@ -54,23 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _onNotificationTap(BuildContext context) {
-    final auth = context.read<AuthProvider>();
-    if (auth.isAuthenticated) {
-      Navigator.pushNamed(context, AppRoutes.notifications);
-    } else {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.login,
-        arguments: {'redirectRoute': AppRoutes.notifications},
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final movieProvider = context.watch<MovieProvider>();
-    final notifProvider = context.watch<NotificationProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -99,12 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        actions: [
-          NotificationBadge(
-            unreadCount: notifProvider.unreadCount,
-            onTap: () => _onNotificationTap(context),
-          ),
-        ],
       ),
       bottomNavigationBar: const CustomerBottomNav(currentIndex: 0),
       body: SafeArea(

@@ -50,6 +50,7 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   List<ShowtimeModel> _showtimes = [];
+  String _selectedFormat = 'ALL';
 
   String get _effectiveMovieId =>
       widget.movieId ?? widget.movie?.id ?? '';
@@ -225,11 +226,69 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
             ),
           ),
 
+          // Format Filter Chips (ALL, 2D, 3D, IMAX)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: AppColors.hairline, width: 1),
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFormatChip(label: 'TẤT CẢ', format: 'ALL'),
+                  const SizedBox(width: AppSpacing.xxs),
+                  _buildFormatChip(label: '2D', format: '2D'),
+                  const SizedBox(width: AppSpacing.xxs),
+                  _buildFormatChip(label: '3D', format: '3D'),
+                  const SizedBox(width: AppSpacing.xxs),
+                  _buildFormatChip(label: 'IMAX', format: 'IMAX'),
+                ],
+              ),
+            ),
+          ),
+
           // Showtimes Content with 3 UI States
           Expanded(
             child: _buildContent(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFormatChip({required String label, required String format}) {
+    final isSelected = _selectedFormat == format;
+    return InkWell(
+      key: Key('format_filter_$format'),
+      onTap: () => setState(() => _selectedFormat = format),
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.canvasElevated,
+          borderRadius: BorderRadius.zero,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.hairline,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: AppTextStyles.captionUppercase.copyWith(
+            color: isSelected ? AppColors.ink : AppColors.muted,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
@@ -269,10 +328,24 @@ class _ShowtimeSelectionScreenState extends State<ShowtimeSelectionScreen> {
       );
     }
 
+    final filteredShowtimes = _selectedFormat == 'ALL'
+        ? _showtimes
+        : _showtimes.where((st) => st.format.toUpperCase() == _selectedFormat).toList();
+
+    if (filteredShowtimes.isEmpty) {
+      return Center(
+        child: EmptyState(
+          title: 'CHƯA CÓ SUẤT CHIẾU $_selectedFormat',
+          message: 'Không tìm thấy suất chiếu định dạng $_selectedFormat cho ngày này.',
+          icon: Icons.filter_alt_off_outlined,
+        ),
+      );
+    }
+
     // Group showtimes by movie (when viewing by cinema) or by cinema (when viewing by movie)
     final bool groupByMovie = _effectiveMovieId.isEmpty;
     final Map<String, List<ShowtimeModel>> grouped = {};
-    for (final st in _showtimes) {
+    for (final st in filteredShowtimes) {
       final key = groupByMovie
           ? (st.movieTitle ?? 'PHIM CHIẾU')
           : (st.cinemaName ?? 'Rạp Chiếu');
