@@ -362,7 +362,7 @@ void main() {
       expect(find.text('nam.tran@cinema.vn'), findsOneWidget);
       expect(find.text('CUSTOMER'), findsOneWidget);
       expect(find.text('SỬA HỒ SƠ'), findsOneWidget);
-      expect(find.text('HỘP THƯ HỖ TRỢ'), findsOneWidget);
+      expect(find.text('HỘP THƯ HỖ TRỢ'), findsNothing);
       expect(find.text('ĐĂNG XUẤT'), findsOneWidget);
       expect(find.byType(CustomerBottomNav), findsOneWidget);
     });

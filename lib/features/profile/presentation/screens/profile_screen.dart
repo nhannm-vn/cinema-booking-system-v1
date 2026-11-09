@@ -176,12 +176,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const Divider(color: AppColors.hairline, height: 1),
                 _buildMenuItem(
-                  icon: Icons.headset_mic_outlined,
-                  title: 'HỘP THƯ HỖ TRỢ',
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.supportChat),
-                ),
-                const Divider(color: AppColors.hairline, height: 1),
-                _buildMenuItem(
                   icon: Icons.logout,
                   title: 'ĐĂNG XUẤT',
                   textColor: AppColors.primary,
