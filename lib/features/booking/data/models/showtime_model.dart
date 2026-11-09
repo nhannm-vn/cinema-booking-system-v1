@@ -1,3 +1,5 @@
+import '../../../management/data/models/pricing_settings_model.dart';
+
 /// Showtime model mapping from PostgreSQL `showtimes` table.
 /// References: TECH_STACK.md Section 4 & BUSINESS_RULES.md Section 3.3
 class ShowtimeModel {
@@ -43,20 +45,71 @@ class ShowtimeModel {
   bool get isCancelled => status == 'cancelled';
   bool get isPast => startTime.isBefore(DateTime.now());
 
-  factory ShowtimeModel.fromMap(Map<String, dynamic> map) {
+  /// Computes default minimum ticket price according to format and time per BUSINESS_RULES.md Section 4:
+  /// Standard 2D: 80.000 đ
+  /// Standard 3D: 100.000 đ
+  /// Standard IMAX: 120.000 đ
+  /// Weekend (Fri, Sat, Sun): +10.000 đ
+  /// Prime time (18:00 - 22:00): +10.000 đ
+  static int computeDefaultMinPrice({
+    required String format,
+    required DateTime startTime,
+    int? customMinPrice,
+    PricingSettingsModel? pricing,
+  }) {
+    if (customMinPrice != null && customMinPrice > 0) return customMinPrice;
+
+    final isWeekend = startTime.weekday == DateTime.friday ||
+        startTime.weekday == DateTime.saturday ||
+        startTime.weekday == DateTime.sunday;
+    final primeStart = pricing?.primeStartHour ?? 18;
+    final primeEnd = pricing?.primeEndHour ?? 22;
+    final isPrime = startTime.hour >= primeStart && startTime.hour < primeEnd;
+
+    if (pricing != null) {
+      return pricing.calculateSeatPrice(
+        format: format,
+        seatType: 'standard',
+        isWeekend: isWeekend,
+        isPrimeTime: isPrime,
+      );
+    }
+
+    int base = 80000;
+    final fmt = format.toUpperCase().trim();
+    if (fmt.contains('3D')) {
+      base = 100000;
+    } else if (fmt.contains('IMAX')) {
+      base = 120000;
+    }
+
+    return base + (isWeekend ? 10000 : 0) + (isPrime ? 10000 : 0);
+  }
+
+  factory ShowtimeModel.fromMap(Map<String, dynamic> map, {PricingSettingsModel? pricing}) {
+    final formatStr = (map['format'] as String?) ?? '2D';
+    final startTime = DateTime.parse(map['start_time'] as String).toLocal();
+    final endTime = DateTime.parse(map['end_time'] as String).toLocal();
+    final rawMinPrice = (map['min_price'] as num?)?.toInt();
+
     return ShowtimeModel(
       id: map['id'] as String,
       movieId: map['movie_id'] as String,
       cinemaId: map['cinema_id'] as String,
       roomId: map['room_id'] as String,
-      format: (map['format'] as String?) ?? '2D',
-      startTime: DateTime.parse(map['start_time'] as String).toLocal(),
-      endTime: DateTime.parse(map['end_time'] as String).toLocal(),
+      format: formatStr,
+      startTime: startTime,
+      endTime: endTime,
       status: (map['status'] as String?) ?? 'active',
       cancelReason: map['cancel_reason'] as String?,
       totalSeats: (map['total_seats'] as int?) ?? 0,
       soldSeats: (map['sold_seats'] as int?) ?? 0,
-      minPrice: (map['min_price'] as int?) ?? 80000,
+      minPrice: computeDefaultMinPrice(
+        format: formatStr,
+        startTime: startTime,
+        customMinPrice: rawMinPrice,
+        pricing: pricing,
+      ),
       movieTitle: map['movie_title'] as String?,
       roomName: map['room_name'] as String?,
       cinemaName: map['cinema_name'] as String?,

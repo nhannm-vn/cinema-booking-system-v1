@@ -924,6 +924,12 @@ declare
   v_caller_role text := public.current_role_name();
   v_caller_cinema text := public.current_cinema();
 begin
+  -- Backend tin cậy (service_role trong Edge Functions)
+  if coalesce(auth.role(), '') = 'service_role' then
+    new.updated_at := now();
+    return new;
+  end if;
+
   -- Admin có quyền cập nhật mọi trường
   if v_caller_role = 'admin' then
     new.updated_at := now();

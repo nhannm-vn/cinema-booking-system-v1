@@ -268,6 +268,13 @@ class BookingProvider extends ChangeNotifier {
 
     _currentBookingCode = generateBookingCode();
 
+    final start = _selectedShowtime!.startTime;
+    final bool isWeekend = start.weekday == DateTime.friday ||
+        start.weekday == DateTime.saturday ||
+        start.weekday == DateTime.sunday;
+    final bool isPrime =
+        start.hour >= _pricing.primeStartHour && start.hour < _pricing.primeEndHour;
+
     final bookingJson = {
       'showtime_id': _selectedShowtime!.id,
       'cinema_id': _selectedShowtime!.cinemaId,
@@ -277,10 +284,19 @@ class BookingProvider extends ChangeNotifier {
       'format': _selectedShowtime!.format,
       'showtime_start': _selectedShowtime!.startTime.toUtc().toIso8601String(),
       'price_snapshot': generatePriceSnapshot(),
-      'seats': _selectedSeatIds.map((id) => {
-        'id': id,
-        'type': _selectedSeatTypes[id]?.name ?? 'standard',
-        'price': calculateTicketTotal() ~/ _selectedSeatIds.length,
+      'seats': _selectedSeatIds.map((id) {
+        final type = _selectedSeatTypes[id] ?? SeatType.standard;
+        final seatPrice = _pricing.calculateSeatPrice(
+          format: _selectedShowtime!.format,
+          seatType: type.name,
+          isWeekend: isWeekend,
+          isPrimeTime: isPrime,
+        );
+        return {
+          'id': id,
+          'type': type.name,
+          'price': seatPrice,
+        };
       }).toList(),
       'foods': _selectedFoods.map((f) => f.toBookingJson()).toList(),
     };
@@ -317,6 +333,13 @@ class BookingProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
+    final start = _selectedShowtime!.startTime;
+    final bool isWeekend = start.weekday == DateTime.friday ||
+        start.weekday == DateTime.saturday ||
+        start.weekday == DateTime.sunday;
+    final bool isPrime =
+        start.hour >= _pricing.primeStartHour && start.hour < _pricing.primeEndHour;
+
     final bookingJson = {
       'showtime_id': _selectedShowtime!.id,
       'cinema_id': _selectedShowtime!.cinemaId,
@@ -326,10 +349,19 @@ class BookingProvider extends ChangeNotifier {
       'format': _selectedShowtime!.format,
       'showtime_start': _selectedShowtime!.startTime.toUtc().toIso8601String(),
       'price_snapshot': generatePriceSnapshot(),
-      'seats': _selectedSeatIds.map((id) => {
-        'id': id,
-        'type': _selectedSeatTypes[id]?.name ?? 'standard',
-        'price': calculateTicketTotal() ~/ _selectedSeatIds.length,
+      'seats': _selectedSeatIds.map((id) {
+        final type = _selectedSeatTypes[id] ?? SeatType.standard;
+        final seatPrice = _pricing.calculateSeatPrice(
+          format: _selectedShowtime!.format,
+          seatType: type.name,
+          isWeekend: isWeekend,
+          isPrimeTime: isPrime,
+        );
+        return {
+          'id': id,
+          'type': type.name,
+          'price': seatPrice,
+        };
       }).toList(),
       'foods': _selectedFoods.map((f) => f.toBookingJson()).toList(),
     };

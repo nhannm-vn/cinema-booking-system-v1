@@ -13,7 +13,6 @@ import '../../../../shared/widgets/customer_bottom_nav.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/manager_bottom_nav.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../../shared/widgets/staff_bottom_nav.dart';
 import '../../../../shared/widgets/status_badge.dart';
@@ -64,14 +63,6 @@ class _MyTicketsScreenState extends State<MyTicketsScreen>
           'VÉ CỦA TÔI'.toUpperCase(),
           style: AppTextStyles.titleSm.copyWith(color: AppColors.ink),
         ),
-        actions: [
-          NotificationBadge(
-            unreadCount: 0,
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.notifications);
-            },
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.primary,

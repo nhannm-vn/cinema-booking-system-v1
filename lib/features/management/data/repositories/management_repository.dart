@@ -486,9 +486,15 @@ class ManagementRepository {
       });
     } catch (_) {
       // Fallback direct update for mock or legacy backend
-      await _supabase.from('profiles').update({
+      final res = await _supabase.from('profiles').update({
         'is_locked': isLocked,
-      }).eq('id', userId);
+      }).eq('id', userId).select();
+
+      if ((res as List).isEmpty) {
+        throw Exception(
+          'Không thể cập nhật trạng thái khóa tài khoản. Hãy đảm bảo tài khoản Admin có quyền hoặc hàm toggle_user_lock đã được tạo trên Supabase.',
+        );
+      }
 
       await logAudit(
         action: isLocked ? 'lockUser' : 'unlockUser',

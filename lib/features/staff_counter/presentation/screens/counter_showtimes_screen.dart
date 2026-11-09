@@ -12,7 +12,6 @@ import '../../../../shared/widgets/app_badge.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
-import '../../../../shared/widgets/notification_badge.dart';
 import '../../../../shared/widgets/quantity_stepper.dart';
 import '../../../../shared/widgets/skeleton_box.dart';
 import '../../../../shared/widgets/staff_bottom_nav.dart';
@@ -155,13 +154,6 @@ class _CounterShowtimesScreenState extends State<CounterShowtimesScreen> {
             ),
           ],
         ),
-        actions: [
-          NotificationBadge(
-            unreadCount: 0,
-            onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
-          ),
-          const SizedBox(width: AppSpacing.xxs),
-        ],
       ),
       body: Column(
         children: [
