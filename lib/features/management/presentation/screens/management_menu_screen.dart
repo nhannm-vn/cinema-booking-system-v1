@@ -71,13 +71,6 @@ class ManagementMenuScreen extends StatelessWidget {
             subtitle: 'Tạo tài khoản, khóa / mở khóa nhân sự',
             route: AppRoutes.manageEmployees,
           ),
-          _buildMenuItem(
-            context,
-            icon: Icons.chat_outlined,
-            title: 'Hộp thư hỗ trợ khách (S31)',
-            subtitle: 'Tin nhắn trực tuyến hai chiều với khách hàng',
-            route: AppRoutes.supportChat,
-          ),
 
           const SizedBox(height: AppSpacing.lg),
 

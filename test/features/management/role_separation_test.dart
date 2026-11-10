@@ -149,7 +149,7 @@ void main() {
       expect(find.text('Bàn làm việc / Dashboard (S22)'), findsOneWidget);
       expect(find.text('Quản lý đơn vé & Bookings (S15)'), findsOneWidget);
       expect(find.text('Quản lý nhân viên (S23)'), findsOneWidget);
-      expect(find.text('Hộp thư hỗ trợ khách (S31)'), findsOneWidget);
+      expect(find.text('Hộp thư hỗ trợ khách (S31)'), findsNothing);
     });
 
     testWidgets('S22 OperationalDashboardScreen quick actions have NO staff actions', (tester) async {
